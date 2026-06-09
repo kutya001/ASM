@@ -328,11 +328,21 @@ export async function getTable(sheetName) {
 // CRUD
 // ========================
 
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUUID(str) {
+  if (!str) return false;
+  return uuidRegex.test(str);
+}
+
 export async function addRow(sheetName, obj) {
   const table = resolveTable(sheetName);
   const dbObj = toDb(table, obj);
 
-  if (!dbObj.id) delete dbObj.id; // let DB generate
+  if (dbObj.id && !isValidUUID(dbObj.id)) {
+    delete dbObj.id;
+  } else if (!dbObj.id) {
+    delete dbObj.id;
+  }
 
   if (table === "records") {
     if (!dbObj.start_time) dbObj.start_time = new Date().toISOString();
@@ -362,7 +372,11 @@ export async function addRows(sheetName, objects) {
   const table = resolveTable(sheetName);
   const dbObjects = objects.map((obj) => {
     const dbObj = toDb(table, obj);
-    if (!dbObj.id) delete dbObj.id;
+    if (dbObj.id && !isValidUUID(dbObj.id)) {
+      delete dbObj.id;
+    } else if (!dbObj.id) {
+      delete dbObj.id;
+    }
     if (table === "records") {
       if (!dbObj.start_time) dbObj.start_time = new Date().toISOString();
       dbObj.end_time = null;
