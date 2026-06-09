@@ -1,0 +1,21 @@
+{
+  "name": "Auto Service Managment - ASM ERP",
+  "short_name": "ASM ERP",
+  "description": "Управление автосервисом",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzRmNDZlNSI+PHBhdGggZD0iTTIyIDAuOTg1bC0yMC45MjkgMTIuMzQgMTEuOTcxIDIuMDg1IDguOTU4LTE0LjQyNXoiLz48L3N2Zz4=",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzRmNDZlNSI+PHBhdGggZD0iTTIyIDAuOTg1bC0yMC45MjkgMTIuMzQgMTEuOTcxIDIuMDg1IDguOTU4LTE0LjQyNXoiLz48L3N2Zz4=",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

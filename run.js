@@ -1,0 +1,1 @@
+const fs = require("fs"); const lines = fs.readFileSync("src/App.vue", "utf8").split("\n"); const newLines = [...lines.slice(0, 1413), ...lines.slice(1718)]; fs.writeFileSync("src/App.vue", newLines.join("\n"));

@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+[v-cloak] {
+  display: none;
+}
+body {
+  font-family: var(--font-sans);
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+.modal-backdrop.show {
+  opacity: 0.4;
+  backdrop-filter: blur(4px);
+}
+
+@theme {
+  --font-sans:
+    "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --font-heading: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-primary: #4f46e5;
+  --color-surface: #ffffff;
+  --color-background: #f8fafc;
+  --color-background-light: #ffffff;
+  --color-text-main: #0f172a;
+  --color-muted: #64748b;
+  --color-border-subtle: #e2e8f0;
+
+  --color-status-open-bg: #eff6ff;
+  --color-status-open-text: #2563eb;
+  --color-status-completed-bg: #ecfdf5;
+  --color-status-completed-text: #059669;
+  --color-status-canceled-bg: #fef2f2;
+  --color-status-canceled-text: #dc2626;
+
+  --shadow-soft:
+    0 10px 30px -10px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+  --shadow-fab: 0 10px 25px -5px rgba(79, 70, 229, 0.35);
+}
+
+/* ============================================================== */
+/* PREMIUM DESIGN SYSTEM OVERRIDES (ANTIGRAVITY & MODERN CRAFT) */
+/* ============================================================== */
+
+/* Universal Soft-Rounding For Angular/Blocky Inputs & Layouts */
+input:not(.bg-transparent),
+select,
+textarea,
+.form-select,
+.form-control {
+  border-radius: 14px; /* Soft rounding */
+  border: 1px solid #e2e8f0;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth Focus States with Subtle Purple Aura */
+input:not(.bg-transparent):focus,
+select:focus,
+textarea:focus,
+.form-select:focus,
+.form-control:focus {
+  border-color: #6366f1;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+  background-color: #ffffff;
+}
+
+/* Rounded Cards & Elements */
+.card,
+.bg-surface,
+article {
+  border-radius: 20px; /* Consistent 20px rounded cards */
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 10px 25px -12px rgba(15, 23, 42, 0.06);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dynamic Hover Elevation on Service / Repair Cards */
+article:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -8px rgba(15, 23, 42, 0.08) !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+/* Premium Rounded Modals */
+.modal-content {
+  border-radius: 28px !important; /* Soft, organic modular frame */
+  border: none !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15) !important;
+}
+
+.modal-header {
+  border-bottom: 1px solid rgba(241, 245, 249, 0.8) !important;
+  padding: 1.5rem 1.75rem !important;
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(241, 245, 249, 0.8) !important;
+  background-color: #f8fafc !important;
+}
+
+/* Standard Button Rounding Reset */
+button,
+.btn {
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth Button Hover Enhancements */
+button:hover:not(:disabled),
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+button:active:not(:disabled),
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+/* Badges Soft-Rounding */
+span.rounded-md,
+span.rounded-lg {
+  border-radius: 9999px; /* Soft pill-shaped badges across the dashboard */
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Hide Mobile Bottom Nav when modal forms or detail overlays are open */
+body.modal-open nav.md\:hidden,
+body.dialog-open nav.md\:hidden {
+  display: none !important;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Auto Service Managment - ASM ERP",
+  "description": "Auto Service Managment - ASM ERP. SPA для учета и управления автосервиса на базе Google Sheets + GAS + Vue 3",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
