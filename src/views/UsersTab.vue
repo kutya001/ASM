@@ -11,13 +11,25 @@
       </span>
     </div>
 
+    <!-- Info Banner for SenMaster (Invite instructions) -->
+    <div v-if="store.user && store.user.Role === 'SenMaster'" class="bg-indigo-50/70 border border-indigo-100 p-4 rounded-2xl shadow-sm space-y-2">
+      <h4 class="text-xs font-black text-indigo-800 uppercase tracking-wider font-heading flex items-center gap-1.5 m-0">
+        <span class="material-symbols-outlined text-[15px]">send_to_mobile</span>
+        Приглашение мастеров
+      </h4>
+      <p class="text-[11px] text-indigo-700 leading-relaxed font-semibold m-0">
+        Для приглашения новых сотрудников в вашу организацию попросите их зарегистрироваться по ссылке и выбрать вашу организацию:
+        <strong class="text-indigo-950 font-black">"{{ organizationName }}"</strong>.
+      </p>
+    </div>
+
     <!-- Collapsible Advanced Filters -->
     <div v-if="isFiltersExpanded" class="bg-white border border-slate-150 p-3 rounded-2xl shadow-sm space-y-3 animate-fade-in">
       <div>
         <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Роль</label>
         <div class="flex flex-wrap gap-1">
           <button
-            v-for="r in roles"
+            v-for="r in filteredRolesList"
             :key="r.val"
             @click="selectedRole = r.val"
             class="px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer"
@@ -73,9 +85,9 @@
               >
                 {{
                   u.Role === "Superadmin"
-                    ? "Админ"
+                    ? "Гл.Админ"
                     : u.Role === "SenMaster"
-                      ? "Ст.Мастер"
+                      ? "Главный мастер"
                       : "Мастер"
                 }}
               </span>
@@ -93,12 +105,17 @@
                 {{ u.Phone }}
               </a>
               <span v-else class="text-slate-300">нет телефона</span>
+              
+              <template v-if="isGlobalAdmin">
+                <span class="text-slate-300">•</span>
+                <span class="text-indigo-600 font-bold truncate">Орг: {{ getOrganizationName(u.OrganizationID) }}</span>
+              </template>
             </div>
 
-            <!-- Password display for administrator with toggle -->
-            <div v-if="isAdmin" class="mt-2 pt-1.5 border-t border-slate-100 flex items-center gap-1.5 text-[10.5px]">
+            <!-- Password display for administrators with toggle -->
+            <div v-if="isGlobalAdmin" class="mt-2 pt-1.5 border-t border-slate-100 flex items-center gap-1.5 text-[10.5px]">
               <span class="text-slate-400 font-bold">Пароль:</span>
-              <span class="font-mono font-bold text-slate-705 bg-slate-50 border border-slate-150 rounded px-1.5 py-0.5 leading-none">
+              <span class="font-mono font-bold text-slate-700 bg-slate-50 border border-slate-150 rounded px-1.5 py-0.5 leading-none">
                 {{ visiblePasswords[u.ID] ? (u.Password || '—') : '••••••••' }}
               </span>
               <button
@@ -186,7 +203,7 @@ export default {
       roles: [
         { val: "all", lbl: "Все роли" },
         { val: "Superadmin", lbl: "Админ" },
-        { val: "SenMaster", lbl: "Ст. Мастер" },
+        { val: "SenMaster", lbl: "Главный мастер" },
         { val: "Master", lbl: "Мастер" }
       ],
       statuses: [
@@ -197,12 +214,29 @@ export default {
     };
   },
   computed: {
-    isAdmin() {
-      const store = useMainStore();
-      return store.user && store.user.Role === 'Superadmin';
+    store() {
+      return useMainStore();
+    },
+    isGlobalAdmin() {
+      return this.store.user && this.store.user.Role === 'Superadmin';
+    },
+    filteredRolesList() {
+      if (this.isGlobalAdmin) return this.roles;
+      // SenMaster can only filter by SenMaster and Master roles
+      return this.roles.filter(r => r.val !== "Superadmin");
+    },
+    organizationName() {
+      if (!this.store.user || !this.db.organizations) return "—";
+      const org = this.db.organizations.find(o => o.ID === this.store.user.OrganizationID);
+      return org ? org.Name : "—";
     },
     filteredUsers() {
       let list = this.db.users || [];
+
+      // Filter by organization if not Superadmin
+      if (!this.isGlobalAdmin && this.store.user) {
+        list = list.filter(u => u.OrganizationID === this.store.user.OrganizationID);
+      }
 
       // Filter by role
       if (this.selectedRole !== "all") {
@@ -232,7 +266,13 @@ export default {
   methods: {
     togglePassword(id) {
       this.visiblePasswords[id] = !this.visiblePasswords[id];
+    },
+    getOrganizationName(orgId) {
+      if (!this.db.organizations) return "—";
+      const org = this.db.organizations.find(o => o.ID === orgId);
+      return org ? org.Name : "—";
     }
-  }
+  },
+  emits: ['approve-user', 'open-user-config']
 }
 </script>

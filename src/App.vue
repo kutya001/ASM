@@ -125,21 +125,12 @@
           />
 
           <UsersTab
-            v-if="activeTab === 'users' && user.Role === 'Superadmin'"
+            v-if="activeTab === 'users' && (user.Role === 'Superadmin' || user.Role === 'SenMaster')"
             :db="db"
             :search-query="searchQuery"
             :is-filters-expanded="isFiltersExpanded"
             @approve-user="approveUser"
             @open-user-config="openUserConfigModal"
-          />
-
-          <ApplicationsTab
-            v-if="activeTab === 'applications'"
-            :db="db"
-            :user="user"
-            :search-query="searchQuery"
-            :is-filters-expanded="isFiltersExpanded"
-            @open-record="openRecordModal"
           />
         </div>
 
@@ -189,7 +180,6 @@ import AuthView from "./views/AuthView.vue";
 import Sidebar from "./components/layout/Sidebar.vue";
 import Header from "./components/layout/Header.vue";
 import MobileNav from "./components/layout/MobileNav.vue";
-import ApplicationsTab from "./views/ApplicationsTab.vue";
 import GameContainer from "./games/GameContainer.vue";
 
 
@@ -209,7 +199,6 @@ export default {
     Sidebar,
     Header,
     MobileNav,
-    ApplicationsTab,
     GameContainer,
 
   },

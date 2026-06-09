@@ -15,14 +15,12 @@
     >
       <div class="flex items-center gap-3 mb-8 justify-center select-none">
         <div
-          class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg overflow-hidden"
-          :class="store.logoUrl ? '' : 'bg-indigo-600 shadow-indigo-200'"
+          class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg overflow-hidden bg-indigo-600 shadow-indigo-200"
         >
-          <img v-if="store.logoUrl" :src="store.logoUrl" class="w-full h-full object-cover" referrerpolicy="no-referrer" alt="App Logo" />
-          <i v-else :class="store.appIcon || 'bi-car-front-fill'" class="text-white text-xl"></i>
+          <i :class="store.appIcon || 'bi-car-front-fill'" class="text-white text-xl"></i>
         </div>
         <h2 class="text-2xl font-bold text-slate-800 tracking-tight font-heading">
-          Auto Service Managment - ASM ERP
+          Auto Service Management - ASM ERP
         </h2>
       </div>
 
@@ -56,7 +54,7 @@
       </ul>
 
       <div class="space-y-4">
-        <!-- USERNAME MANUAL INPUT -->
+        <!-- USERNAME -->
         <div>
           <label
             class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2"
@@ -65,11 +63,12 @@
           <input
             v-model="authForm.username"
             type="text"
-            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-800 placeholder-slate-400"
+            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-800 placeholder-slate-400"
             placeholder="Введите ваш логин"
           />
         </div>
 
+        <!-- PASSWORD -->
         <div>
           <label
             class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2"
@@ -78,37 +77,57 @@
           <input
             v-model="authForm.password"
             type="password"
-            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-800 placeholder-slate-400"
+            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-800 placeholder-slate-400"
             placeholder="••••••••"
             @keyup.enter="handleAuth"
           />
         </div>
 
+        <!-- REGISTER SPECIFIC FIELDS -->
         <template v-if="authMode === 'register'">
-          <div>
-            <label
-              class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2"
-              >ФИО (Полное имя)</label
-            >
-            <input
-              v-model="authForm.name"
-              type="text"
-              class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-800 placeholder-slate-400"
-              placeholder="Иван Иванов"
-            />
-          </div>
-          <div>
-            <label
-              class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2"
-              >Номер телефона</label
-            >
-            <input
-              v-model="authForm.phone"
-              type="tel"
-              @input="onPhoneInput"
-              class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-800 placeholder-slate-400"
-              placeholder="+996 XXX XXX XXX"
-            />
+          <div class="pt-2">
+            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Организация</label>
+            <div class="flex gap-2 mb-3">
+              <button
+                type="button"
+                @click="orgMode = 'join'"
+                class="flex-1 py-2 px-3 text-xs font-bold rounded-lg border transition"
+                :class="orgMode === 'join' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'"
+              >
+                Выбрать сервис
+              </button>
+              <button
+                type="button"
+                @click="orgMode = 'create'"
+                class="flex-1 py-2 px-3 text-xs font-bold rounded-lg border transition"
+                :class="orgMode === 'create' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'"
+              >
+                Создать новый
+              </button>
+            </div>
+
+            <!-- Join existing organization -->
+            <div v-if="orgMode === 'join'">
+              <select
+                v-model="selectedOrgId"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800"
+              >
+                <option value="">-- Выберите организацию --</option>
+                <option v-for="org in organizations" :key="org.id" :value="org.id">
+                  {{ org.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Create new organization -->
+            <div v-else>
+              <input
+                v-model="newOrgName"
+                type="text"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-800 placeholder-slate-400"
+                placeholder="Название нового автосервиса"
+              />
+            </div>
           </div>
         </template>
 
@@ -127,29 +146,30 @@
         </button>
 
         <p
-          v-if="authMode === 'register'"
+          v-if="authMode === 'register' && orgMode === 'join'"
           class="text-xs text-center text-slate-400 mt-4 leading-relaxed font-medium"
         >
-          После регистрации аккаунт должен быть подтверждён
-          Супер-администратором.
+          После регистрации ваш аккаунт должен быть подтверждён
+          руководителем выбранной организации.
         </p>
       </div>
-
-
     </div>
   </div>
 </template>
 
 <script>
 import { useMainStore } from "../store";
-import { runGS } from "../services/api";
-import { formatPhoneInput } from "../utils/helpers";
+import { getOrganizations } from "../services/api";
 
 export default {
   data() {
     return {
       authMode: "login",
-      authForm: { username: "", password: "", name: "", phone: "+996 " },
+      authForm: { username: "", password: "" },
+      orgMode: "join",
+      selectedOrgId: "",
+      newOrgName: "",
+      organizations: [],
       authLoading: false,
     };
   },
@@ -158,10 +178,25 @@ export default {
       return useMainStore();
     },
   },
+  watch: {
+    authMode(val) {
+      if (val === "register") {
+        this.fetchOrganizations();
+      }
+    }
+  },
+  mounted() {
+    if (this.authMode === "register") {
+      this.fetchOrganizations();
+    }
+  },
   methods: {
-
-    onPhoneInput() {
-      this.authForm.phone = formatPhoneInput(this.authForm.phone);
+    async fetchOrganizations() {
+      try {
+        this.organizations = await getOrganizations();
+      } catch (e) {
+        console.error("Не удалось загрузить список организаций:", e);
+      }
     },
     async handleAuth() {
       const store = useMainStore();
@@ -174,28 +209,12 @@ export default {
           throw new Error("Пожалуйста, введите пароль.");
 
         if (this.authMode === "login") {
-          let res = await runGS("loginUser", loginUser, this.authForm.password);
-          store.user = res;
-          localStorage.setItem("currentUser", JSON.stringify(res));
-          store.showToast(
-            `Успешный вход. Привет, ${res.Name || res.Username}!`,
-          );
-          store.loadInitialData();
+          await store.login(loginUser, this.authForm.password);
         } else {
-          if (!this.authForm.name)
-            throw new Error("Пожалуйста, введите ваше полное имя.");
-          if (!this.authForm.phone)
-            throw new Error("Пожалуйста, введите ваш номер телефона.");
-
-          let res = await runGS(
-            "registerUser",
-            loginUser,
-            this.authForm.password,
-            this.authForm.name,
-            this.authForm.phone,
-          );
-          store.showToast(res.message);
+          const orgValue = this.orgMode === "create" ? this.newOrgName : this.selectedOrgId;
+          await store.register(loginUser, this.authForm.password, this.orgMode, orgValue);
           this.authMode = "login";
+          this.authForm.password = "";
         }
       } catch (e) {
         store.showToast(e.message, "error");

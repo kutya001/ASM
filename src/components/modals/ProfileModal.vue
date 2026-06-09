@@ -58,7 +58,7 @@
                   user.Role === "Superadmin"
                     ? "Супер-админ"
                     : user.Role === "SenMaster"
-                      ? "Ст. мастер"
+                      ? "Главный мастер"
                       : "Мастер"
                 }}</span
               >
@@ -99,8 +99,6 @@
             </button>
           </div>
 
-
-
           <!-- Edit mode -->
           <div
             v-else
@@ -127,7 +125,7 @@
                   user.Role === 'Superadmin'
                     ? 'Супер-админ'
                     : user.Role === 'SenMaster'
-                      ? 'Ст. мастер'
+                      ? 'Главный мастер'
                       : 'Мастер'
                 "
                 disabled
@@ -162,12 +160,13 @@
             <div>
               <label
                 class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2"
-                >Имя пользователя / Логин</label
+                >Имя пользователя / Логин (не редактируется)</label
               >
               <input
                 v-model="profileForm.username"
                 type="text"
-                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 outline-none focus:border-indigo-500 shadow-sm transition"
+                disabled
+                class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm text-slate-500 cursor-not-allowed shadow-sm transition"
               />
             </div>
             <div>
@@ -202,7 +201,7 @@
 
 <script>
 import { useMainStore } from "../../store";
-import { runGS } from "../../services/api";
+import { updateUserProfile } from "../../services/api";
 import { formatPhoneInput } from "../../utils/helpers";
 
 export default {
@@ -216,7 +215,6 @@ export default {
     };
   },
   computed: {
-
     store() {
       return useMainStore();
     },
@@ -244,26 +242,26 @@ export default {
     hide() {
       if (this.bsModal) this.bsModal.hide();
     },
-
     onPhoneInput() {
       this.profileForm.Phone = formatPhoneInput(this.profileForm.Phone);
     },
     async saveUserProfile() {
-      if (!this.profileForm.username)
-        return this.store.showToast("Укажите имя пользователя", "error");
       this.isSavingProfile = true;
       try {
-        let res = await runGS(
-          "updateUserProfile",
+        await updateUserProfile(
           this.user.ID,
-          this.profileForm.username,
           this.profileForm.password,
           this.profileForm.Name,
           this.profileForm.Phone,
         );
-        this.store.user.Username = res.Username;
-        this.store.user.Name = res.Name;
-        this.store.user.Phone = res.Phone;
+        
+        // Update store state
+        this.store.user.Name = this.profileForm.Name;
+        this.store.user.Phone = this.profileForm.Phone;
+        
+        // Update user storage
+        localStorage.setItem("currentUser", JSON.stringify(this.store.user));
+
         this.profileForm.password = "";
         this.store.showToast("Профиль успешно обновлен!");
         this.hide();

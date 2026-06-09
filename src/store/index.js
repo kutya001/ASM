@@ -1,5 +1,18 @@
 import { defineStore } from "pinia";
-import { runGS, supabase } from "../services/api";
+import { 
+  supabase, 
+  loginUser, 
+  registerUserWithOrg, 
+  approveUser, 
+  getInitData, 
+  getTable, 
+  addRow, 
+  addRows, 
+  updateRecord, 
+  updateRow, 
+  deleteRow, 
+  bulkImport 
+} from "../services/api";
 
 export const useMainStore = defineStore("main", {
   state: () => {
@@ -12,7 +25,7 @@ export const useMainStore = defineStore("main", {
     }
     return {
       user: savedUser,
-      db: { records: [], services: [], brands: [], models: [], users: [], applications: [], welcomescreens: [], gamerecords: [] },
+      db: { records: [], services: [], brands: [], models: [], users: [], welcomescreens: [], gamerecords: [] },
       syncQueue: [],
       isSyncing: false,
       toasts: [],
@@ -70,15 +83,15 @@ export const useMainStore = defineStore("main", {
     },
   },
   actions: {
-    async login(loginUser, password) {
-      let res = await runGS("loginUser", loginUser, password);
+    async login(username, password) {
+      let res = await loginUser(username, password);
       this.user = res;
       localStorage.setItem("currentUser", JSON.stringify(res));
       this.showToast(`Успешный вход. Привет, ${res.Name || res.Username}!`);
       await this.loadInitialData();
     },
-    async register(loginUser, password, name, phone) {
-      let res = await runGS("registerUser", loginUser, password, name, phone);
+    async register(username, password, orgMode, orgValue) {
+      let res = await registerUserWithOrg(username, password, orgMode, orgValue);
       this.showToast(res.message);
     },
     showToast(msg, type = "success") {
@@ -188,7 +201,7 @@ export const useMainStore = defineStore("main", {
     },
     async loadWelcomeScreenInfo() {
       try {
-        const screens = await runGS("getTable", "WelcomeScreens");
+        const screens = await getTable("WelcomeScreens");
         if (Array.isArray(screens) && screens.length > 0) {
           this.db.welcomescreens = screens;
           const screen = screens.find((s) => s.ID === "welcome_main") || screens[0];
@@ -205,7 +218,7 @@ export const useMainStore = defineStore("main", {
       if (!this.user) return;
       this.loading = true;
       try {
-        let d = await runGS("getInitData", this.user.Role, this.user.ID);
+        let d = await getInitData(this.user.Role, this.user.ID, this.user.OrganizationID);
 
         // Parse ServicesJSON for records
         d.records.forEach((r) => {
@@ -249,7 +262,6 @@ export const useMainStore = defineStore("main", {
         brands: [],
         models: [],
         users: [],
-        applications: [],
         welcomescreens: [],
         gamerecords: [],
       };
@@ -258,6 +270,12 @@ export const useMainStore = defineStore("main", {
     },
     async dispatchSync(taskName, payload, sheet = null) {
       this.isSyncing = true;
+      
+      // Inject OrganizationID if missing and relevant
+      if (typeof payload === 'object' && payload !== null && this.user) {
+        payload.OrganizationID = payload.OrganizationID || this.user.OrganizationID;
+      }
+
       this.syncQueue.push({ taskName, payload, sheet });
 
       // --- Optimistic UI Updates ---
@@ -336,29 +354,28 @@ export const useMainStore = defineStore("main", {
           this.syncStatus = "updating";
           let newData;
           if (task.taskName === "updateRecord") {
-            newData = await runGS("updateRecord", task.payload);
+            newData = await updateRecord(task.payload);
           } else if (task.taskName === "approveUser") {
-            newData = await runGS(
-              "approveUser",
+            newData = await approveUser(
               task.payload.id,
               task.payload.data,
             );
             this.db.users = newData;
           } else if (task.taskName === "addRow") {
-            newData = await runGS("addRow", task.sheet, task.payload);
+            newData = await addRow(task.sheet, task.payload);
           } else if (task.taskName === "addRows") {
-            newData = await runGS("addRows", task.sheet, task.payload);
+            newData = await addRows(task.sheet, task.payload);
           } else if (task.taskName === "bulkImport") {
-            newData = await runGS("bulkImport", task.payload);
+            newData = await bulkImport(task.payload);
           } else if (task.taskName === "updateRow") {
-            newData = await runGS("updateRow", task.sheet, task.payload);
+            newData = await updateRow(task.sheet, task.payload);
           } else if (task.taskName === "deleteRow") {
-            newData = await runGS(
-              "deleteRow",
+            newData = await deleteRow(
               task.sheet,
               task.payload,
               this.user.Role,
               this.user.ID,
+              this.user.OrganizationID,
             );
           }
 
@@ -371,7 +388,6 @@ export const useMainStore = defineStore("main", {
                 this.db[key] = newData;
               }
             } else {
-              // newData is a full initData object
               this.db = newData;
             }
             // Parse ServicesJSON for records
@@ -414,28 +430,24 @@ export const useMainStore = defineStore("main", {
         supabase.removeChannel(this._realtimeChannel);
       }
 
-      // Table name → store key mapping for Realtime events
       const tableToStoreKey = {
         records: "records",
         services: "services",
         users: "users",
         brands: "brands",
         models: "models",
-        applications: "applications",
         welcome_screens: "welcomescreens",
         game_records: "gamerecords",
       };
 
-      // Field mapping for Realtime payloads (reuse from api.js)
       const FIELD_MAPS = {
-        users: { id: "ID", username: "Username", password: "Password", name: "Name", phone: "Phone", role: "Role", status: "Status" },
-        records: { id: "ID", client_name: "ClientName", phone: "Phone", car_number: "CarNumber", brand_id: "BrandID", model_id: "ModelID", master_id: "MasterID", start_time: "StartTime", end_time: "EndTime", status: "Status", services_json: "ServicesJSON", additional_services: "AdditionalServices", total_amount: "TotalAmount", comment: "Comment", is_paid: "IsPaid" },
-        services: { id: "ID", name: "Name", price: "Price" },
+        users: { id: "ID", username: "Username", password: "Password", name: "Name", phone: "Phone", role: "Role", status: "Status", organization_id: "OrganizationID" },
+        records: { id: "ID", client_name: "ClientName", phone: "Phone", car_number: "CarNumber", brand_id: "BrandID", model_id: "ModelID", master_id: "MasterID", start_time: "StartTime", end_time: "EndTime", status: "Status", services_json: "ServicesJSON", additional_services: "AdditionalServices", total_amount: "TotalAmount", comment: "Comment", is_paid: "IsPaid", organization_id: "OrganizationID" },
+        services: { id: "ID", name: "Name", price: "Price", organization_id: "OrganizationID" },
         brands: { id: "ID", name: "Name" },
         models: { id: "ID", brand_id: "BrandID", name: "Name" },
         welcome_screens: { id: "ID", title: "Title", text: "Text" },
         game_records: { id: "ID", user_id: "UserID", username: "Username", game_id: "GameID", start_time: "StartTime", play_time: "PlayTime", score: "Score" },
-        applications: { id: "ID", timestamp: "Отметка времени", client_name: "Ваше Имя", phone: "Контактный номер телефона", car_number: "Государственный номер машины (госномер)", brand_name: "Марка автомобиля", model_name: "Модель автомобиля", car_year: "Год выпуска автомобиля", selected_services: "Выберите необходимые услуги автоэлектрики (если применимо)", preferred_date: "Предполагаемая дата записи", preferred_time: "Предполагаемое время записи", comment: "Краткое описание проблемы или комментарий (по желанию)", email: "Адрес электронной почты", record_id: "IDRecords", status: "Статус Заявки" },
       };
 
       function mapRow(table, dbRow) {
@@ -449,6 +461,9 @@ export const useMainStore = defineStore("main", {
         return result;
       }
 
+      const isSuper = this.user && this.user.Role === 'Superadmin';
+      const myOrgId = this.user ? this.user.OrganizationID : null;
+
       const channel = supabase
         .channel("db-all-changes")
         .on("postgres_changes", { event: "*", schema: "public" }, (payload) => {
@@ -461,7 +476,11 @@ export const useMainStore = defineStore("main", {
           if (eventType === "INSERT") {
             const newRow = mapRow(table, payload.new);
             if (newRow) {
-              // Avoid duplicating rows we already added optimistically
+              // Client-side multi-tenancy filter
+              if (!isSuper && newRow.OrganizationID && String(newRow.OrganizationID) !== String(myOrgId)) {
+                return;
+              }
+              
               const existing = this.db[storeKey].find(r => r.ID === newRow.ID);
               if (!existing) {
                 if (storeKey === "records") {
@@ -470,7 +489,6 @@ export const useMainStore = defineStore("main", {
                   this.db[storeKey].push(newRow);
                 }
               } else {
-                // Update the optimistic entry with real server data
                 const idx = this.db[storeKey].indexOf(existing);
                 this.db[storeKey][idx] = { ...existing, ...newRow };
               }
@@ -478,6 +496,11 @@ export const useMainStore = defineStore("main", {
           } else if (eventType === "UPDATE") {
             const updatedRow = mapRow(table, payload.new);
             if (updatedRow) {
+              // Client-side multi-tenancy filter
+              if (!isSuper && updatedRow.OrganizationID && String(updatedRow.OrganizationID) !== String(myOrgId)) {
+                return;
+              }
+
               const idx = this.db[storeKey].findIndex(r => r.ID === updatedRow.ID);
               if (idx !== -1) {
                 this.db[storeKey][idx] = { ...this.db[storeKey][idx], ...updatedRow };

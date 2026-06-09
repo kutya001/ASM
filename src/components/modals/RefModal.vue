@@ -146,6 +146,14 @@ export default {
       try {
         this.isSaving = true;
         let sheet = this.refMeta[this.activeRefTab].sheet;
+        
+        // Role protection
+        if (this.activeRefTab !== 'services' && this.user.Role !== 'Superadmin') {
+          this.store.showToast("Только Супер-администратор может редактировать этот справочник", "error");
+          this.isSaving = false;
+          return;
+        }
+
         let payload = Object.assign(
           { _role: this.user.Role, _userId: this.user.ID },
           this.refForm,
@@ -162,6 +170,7 @@ export default {
         payload.Name = nameVal;
 
         if (this.activeRefTab === 'services') {
+          payload.OrganizationID = this.user.OrganizationID;
           const list = this.store.db.services || [];
           const exists = list.some(x => x.ID !== payload.ID && String(x.Name || '').trim().toLowerCase() === nameVal.toLowerCase());
           if (exists) {
