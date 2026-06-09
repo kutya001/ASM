@@ -359,15 +359,12 @@ export async function addRow(sheetName, obj) {
   const { data, error } = await supabase.from(table).insert(dbObj).select();
   handleError(error);
 
-  if (table === "records") {
-    return getTable("Records");
-  }
-  return getInitData(obj._role || "Master", obj._userId, obj.OrganizationID);
+  return toApp(table, data[0]);
 }
 
 export async function addRows(sheetName, objects) {
   if (!objects || !Array.isArray(objects) || objects.length === 0) {
-    return getInitData("Master", "", "");
+    return [];
   }
   const table = resolveTable(sheetName);
   const dbObjects = objects.map((obj) => {
@@ -387,12 +384,10 @@ export async function addRows(sheetName, objects) {
     return dbObj;
   });
 
-  const { error } = await supabase.from(table).insert(dbObjects);
+  const { data, error } = await supabase.from(table).insert(dbObjects).select();
   handleError(error);
 
-  const firstObj = objects[0];
-  if (table === "records") return getTable("Records");
-  return getInitData(firstObj._role || "Master", firstObj._userId, firstObj.OrganizationID);
+  return (data || []).map((row) => toApp(table, row));
 }
 
 export async function updateRecord(obj) {
@@ -410,9 +405,9 @@ export async function updateRecord(obj) {
     try { dbObj.services_json = JSON.parse(dbObj.services_json); } catch { dbObj.services_json = []; }
   }
 
-  const { error } = await supabase.from("records").update(dbObj).eq("id", id);
+  const { data, error } = await supabase.from("records").update(dbObj).eq("id", id).select();
   handleError(error);
-  return getTable("Records");
+  return toApp("records", data[0]);
 }
 
 export async function updateRow(sheetName, obj) {
@@ -421,17 +416,16 @@ export async function updateRow(sheetName, obj) {
   const id = dbObj.id;
   delete dbObj.id;
 
-  const { error } = await supabase.from(table).update(dbObj).eq("id", id);
+  const { data, error } = await supabase.from(table).update(dbObj).eq("id", id).select();
   handleError(error);
-  return getInitData(obj._role || "Master", obj._userId, obj.OrganizationID);
+  return toApp(table, data[0]);
 }
 
-export async function deleteRow(sheetName, id, role, userId, orgId) {
+export async function deleteRow(sheetName, id) {
   const table = resolveTable(sheetName);
   const { error } = await supabase.from(table).delete().eq("id", id);
   handleError(error);
-  if (table === "records") return getTable("Records");
-  return getInitData(role || "Master", userId, orgId);
+  return { id };
 }
 
 export async function bulkImport(data) {

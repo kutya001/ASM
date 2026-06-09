@@ -905,7 +905,7 @@
 
 <script>
 import { useMainStore } from "../../store";
-import { formatDate, getDuration, formatPhoneInput } from "../../utils/helpers";
+import { formatDate, getDuration, formatPhoneInput, generateUUID } from "../../utils/helpers";
 
 export default {
   directives: {
@@ -1403,7 +1403,7 @@ export default {
     async fillAndSave(payload) {
       const isNew = !payload.ID;
       if (isNew) {
-        payload.ID = "local_" + Date.now();
+        payload.ID = generateUUID();
         this.recordForm.ID = payload.ID;
         this.store.db.records.unshift(payload);
         this.store.dispatchSync("addRow", payload, "Records");

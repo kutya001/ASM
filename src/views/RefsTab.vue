@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 max-w-md mx-auto w-full pb-20">
+  <div class="space-y-4 max-w-2xl mx-auto w-full pb-20">
     <!-- Grid view -->
     <div v-if="refTab === 'grid'" class="fade-transition">
       <h1

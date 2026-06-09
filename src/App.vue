@@ -67,7 +67,7 @@
 
           <div
             v-if="activeTab === 'records'"
-            class="max-w-md mx-auto w-full space-y-4 pb-20"
+            class="max-w-2xl mx-auto w-full space-y-4 pb-20"
           >
             <RecordsTab
               :filtered-records="filteredRecords"

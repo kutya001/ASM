@@ -6,7 +6,7 @@
     tabindex="-1"
     aria-hidden="true"
   >
-    <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-dialog modal-dialog-centered">
       <div
         class="modal-content rounded-3xl border-0 shadow-2xl font-sans overflow-hidden"
       >
@@ -74,18 +74,18 @@
           </div>
         </div>
         <div
-          class="modal-footer border-t border-slate-100 px-6 py-5 bg-white flex gap-3"
+          class="modal-footer border-t border-slate-100 px-6 py-4 bg-white flex flex-col sm:flex-row gap-2 sm:gap-3"
         >
           <button
             type="button"
-            class="flex-1 px-4 py-3 border border-slate-205 text-slate-600 rounded-xl bg-white hover:bg-slate-50 font-bold text-sm transition cursor-pointer"
+            class="w-full sm:flex-1 px-4 py-2.5 border border-slate-205 text-slate-600 rounded-xl bg-white hover:bg-slate-50 font-bold text-sm transition cursor-pointer"
             data-bs-dismiss="modal"
           >
             Отмена
           </button>
           <button
             type="button"
-            class="flex-1 px-5 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 border-none cursor-pointer"
+            class="w-full sm:flex-1 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 border-none cursor-pointer"
             @click="saveUserConfig"
             :disabled="isSavingUserConfig"
           >

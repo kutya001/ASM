@@ -13,16 +13,7 @@ import {
   deleteRow, 
   bulkImport 
 } from "../services/api";
-
-function generateUUID() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
+import { generateUUID } from "../utils/helpers";
 
 
 export const useMainStore = defineStore("main", {
@@ -282,9 +273,14 @@ export const useMainStore = defineStore("main", {
     async dispatchSync(taskName, payload, sheet = null) {
       this.isSyncing = true;
       
-      // Inject OrganizationID if missing and relevant
-      if (typeof payload === 'object' && payload !== null && this.user) {
-        payload.OrganizationID = payload.OrganizationID || this.user.OrganizationID;
+      // Inject OrganizationID if missing and relevant, and ensure valid UUID
+      if (typeof payload === 'object' && payload !== null) {
+        if (!payload.ID || String(payload.ID).startsWith('local_') || String(payload.ID).startsWith('temp_')) {
+          payload.ID = generateUUID();
+        }
+        if (this.user) {
+          payload.OrganizationID = payload.OrganizationID || this.user.OrganizationID;
+        }
       }
 
       this.syncQueue.push({ taskName, payload, sheet });
@@ -296,7 +292,7 @@ export const useMainStore = defineStore("main", {
           if (this.db[key]) {
             const tempItem = { 
               ...payload, 
-              ID: payload.ID || ("temp_" + Math.random().toString(36).substr(2, 9)) 
+              ID: payload.ID
             };
             if (key === "records") {
               if (tempItem.ServicesJSON) {
@@ -319,7 +315,7 @@ export const useMainStore = defineStore("main", {
             payload.forEach(item => {
               const tempItem = { 
                 ...item, 
-                ID: item.ID || ("temp_" + Math.random().toString(36).substr(2, 9)) 
+                ID: item.ID
               };
               this.db[key].push(tempItem);
             });
@@ -359,6 +355,18 @@ export const useMainStore = defineStore("main", {
       }
     },
     async processSyncQueue() {
+      const parseRecordServices = (r) => {
+        if (r && r.ServicesJSON) {
+          try {
+            r.ServicesJSON = typeof r.ServicesJSON === "string" ? JSON.parse(r.ServicesJSON) : r.ServicesJSON;
+          } catch (e) {
+            r.ServicesJSON = [];
+          }
+        } else if (r) {
+          r.ServicesJSON = [];
+        }
+      };
+
       while (this.syncQueue.length > 0) {
         let task = this.syncQueue[0];
         try {
@@ -366,57 +374,83 @@ export const useMainStore = defineStore("main", {
           let newData;
           if (task.taskName === "updateRecord") {
             newData = await updateRecord(task.payload);
+            if (newData) {
+              parseRecordServices(newData);
+              const idx = this.db.records.findIndex(r => r.ID === newData.ID);
+              if (idx !== -1) {
+                this.db.records[idx] = { ...this.db.records[idx], ...newData };
+              } else {
+                this.db.records.unshift(newData);
+              }
+            }
           } else if (task.taskName === "approveUser") {
             newData = await approveUser(
               task.payload.id,
               task.payload.data,
             );
-            this.db.users = newData;
+            if (newData) {
+              const idx = this.db.users.findIndex(u => u.ID === newData.ID);
+              if (idx !== -1) {
+                this.db.users[idx] = { ...this.db.users[idx], ...newData };
+              }
+            }
           } else if (task.taskName === "addRow") {
             newData = await addRow(task.sheet, task.payload);
+            const key = task.sheet.toLowerCase();
+            if (this.db[key] && newData) {
+              if (key === "records") {
+                parseRecordServices(newData);
+              }
+              const idx = this.db[key].findIndex(r => r.ID === task.payload.ID);
+              if (idx !== -1) {
+                this.db[key][idx] = newData;
+              } else {
+                if (key === "records") {
+                  this.db.records.unshift(newData);
+                } else {
+                  this.db[key].push(newData);
+                }
+              }
+            }
           } else if (task.taskName === "addRows") {
             newData = await addRows(task.sheet, task.payload);
+            const key = task.sheet.toLowerCase();
+            if (this.db[key] && Array.isArray(newData)) {
+              if (key === "records") {
+                newData.forEach(parseRecordServices);
+              }
+              const tempIds = new Set(task.payload.map(p => p.ID));
+              this.db[key] = this.db[key].filter(r => !tempIds.has(r.ID));
+              this.db[key].push(...newData);
+            }
           } else if (task.taskName === "bulkImport") {
             newData = await bulkImport(task.payload);
+            if (newData) {
+              this.db = newData;
+              if (this.db.records) {
+                this.db.records.forEach(parseRecordServices);
+              }
+            }
           } else if (task.taskName === "updateRow") {
             newData = await updateRow(task.sheet, task.payload);
+            const key = task.sheet.toLowerCase();
+            if (this.db[key] && newData) {
+              if (key === "records") {
+                parseRecordServices(newData);
+              }
+              const idx = this.db[key].findIndex(r => r.ID === newData.ID);
+              if (idx !== -1) {
+                this.db[key][idx] = { ...this.db[key][idx], ...newData };
+              }
+            }
           } else if (task.taskName === "deleteRow") {
-            newData = await deleteRow(
-              task.sheet,
-              task.payload,
-              this.user.Role,
-              this.user.ID,
-              this.user.OrganizationID,
-            );
+            newData = await deleteRow(task.sheet, task.payload);
+            const key = task.sheet.toLowerCase();
+            if (this.db[key] && newData) {
+              this.db[key] = this.db[key].filter(r => r.ID !== newData.id);
+            }
           }
 
-          if (newData) {
-            if (Array.isArray(newData)) {
-              if (task.sheet === "Records" || task.taskName === "updateRecord") {
-                this.db.records = newData;
-              } else {
-                let key = task.sheet.toLowerCase();
-                this.db[key] = newData;
-              }
-            } else {
-              this.db = newData;
-            }
-            // Parse ServicesJSON for records
-            if (this.db.records) {
-              this.db.records.forEach((r) => {
-                if (r.ServicesJSON) {
-                  try {
-                    r.ServicesJSON =
-                      typeof r.ServicesJSON === "string"
-                        ? JSON.parse(r.ServicesJSON)
-                        : r.ServicesJSON;
-                  } catch (e) {
-                    r.ServicesJSON = [];
-                  }
-                } else r.ServicesJSON = [];
-              });
-            }
-          }
           this.syncQueue.shift();
           this.syncStatus = "synced";
         } catch (e) {

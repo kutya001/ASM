@@ -77,6 +77,7 @@
 
 <script>
 import { useMainStore } from "../../store";
+import { generateUUID } from "../../utils/helpers";
 
 export default {
   data() {
@@ -202,7 +203,7 @@ export default {
         }
 
         if (isNew) {
-          payload.ID = "local_" + Date.now();
+          payload.ID = generateUUID();
           if (!this.store.db[this.activeRefTab])
             this.store.db[this.activeRefTab] = [];
           this.store.db[this.activeRefTab].push(payload);

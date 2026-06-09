@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 max-w-md mx-auto w-full pb-20 animate-fade-in">
+  <div class="space-y-4 max-w-2xl mx-auto w-full pb-20 animate-fade-in">
     <!-- Header info line -->
     <div class="flex justify-between items-center px-1">
       <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider font-heading flex items-center gap-1.5">
@@ -56,23 +56,23 @@
       </div>
     </div>
 
-    <div class="space-y-2">
+    <div class="space-y-2.5">
       <div
         v-for="u in filteredUsers"
         :key="u.ID"
-        class="bg-white border border-slate-150/60 hover:border-indigo-150/80 rounded-xl p-3 shadow-sm hover:shadow transition-all flex items-center justify-between gap-3"
+        class="bg-white border border-slate-150/60 hover:border-indigo-150/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
       >
-        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <div class="flex items-start gap-3 min-w-0 flex-1">
           <!-- Compact initials avatar -->
           <div
-            class="w-8.5 h-8.5 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 font-extrabold text-[11px] tracking-tight shrink-0 border border-slate-200/50 uppercase select-none"
+            class="w-10 h-10 rounded-xl bg-slate-550/5 flex items-center justify-center text-indigo-700 font-extrabold text-xs tracking-tight shrink-0 border border-slate-200/50 uppercase select-none mt-0.5"
           >
             {{ u.Name ? u.Name.slice(0, 2) : u.Username.slice(0, 2) }}
           </div>
           <!-- Name and detailed badges -->
-          <div class="min-w-0 flex-1">
+          <div class="min-w-0 flex-1 space-y-0.5">
             <div class="flex items-center gap-1.5 flex-wrap">
-              <h3 class="font-bold text-xs.5 text-slate-800 m-0 truncate">
+              <h3 class="font-bold text-[13px] md:text-sm text-slate-805 m-0 truncate">
                 {{ u.Name || u.Username }}
               </h3>
               <span
@@ -93,13 +93,13 @@
               </span>
             </div>
             <!-- Secondary labels -->
-            <div class="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400 font-semibold flex-wrap">
+            <div class="flex items-center gap-x-2 gap-y-1 text-[10px] text-slate-400 font-semibold flex-wrap">
               <span class="truncate">@{{ u.Username }}</span>
               <span class="text-slate-300">•</span>
               <a
                 v-if="u.Phone"
                 :href="'tel:' + u.Phone"
-                class="text-indigo-600 hover:text-indigo-700 hover:underline flex items-center gap-0.5 truncate"
+                class="text-indigo-605 hover:text-indigo-700 hover:underline flex items-center gap-0.5 truncate"
               >
                 <span class="material-symbols-outlined text-[11px]">phone</span>
                 {{ u.Phone }}
@@ -108,12 +108,12 @@
               
               <template v-if="isGlobalAdmin">
                 <span class="text-slate-300">•</span>
-                <span class="text-indigo-600 font-bold truncate">Орг: {{ getOrganizationName(u.OrganizationID) }}</span>
+                <span class="text-indigo-605 font-bold truncate">Орг: {{ getOrganizationName(u.OrganizationID) }}</span>
               </template>
             </div>
 
             <!-- Password display for administrators with toggle -->
-            <div v-if="isGlobalAdmin" class="mt-2 pt-1.5 border-t border-slate-100 flex items-center gap-1.5 text-[10.5px]">
+            <div v-if="isGlobalAdmin" class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10.5px]">
               <span class="text-slate-400 font-bold">Пароль:</span>
               <span class="font-mono font-bold text-slate-700 bg-slate-50 border border-slate-150 rounded px-1.5 py-0.5 leading-none">
                 {{ visiblePasswords[u.ID] ? (u.Password || '—') : '••••••••' }}
@@ -132,10 +132,11 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2 shrink-0">
+        <!-- Right / Bottom actions section -->
+        <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 mt-2 sm:mt-0 shrink-0">
           <!-- Status Badge -->
           <span
-            class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider border font-mono select-none"
+            class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border font-mono select-none"
             :class="
               u.Status === 'Approved'
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-150/30'
@@ -146,21 +147,22 @@
           </span>
 
           <!-- Quick Actions -->
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1.5">
             <button
               v-if="u.Status === 'Pending'"
               @click="$emit('approve-user', u.ID)"
-              class="w-7 h-7 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center transition border-none cursor-pointer p-0"
+              class="h-8 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-1 transition border-none cursor-pointer text-xs font-bold shadow-xs"
               title="Одобрить доступ"
             >
               <span class="material-symbols-outlined text-[15px] font-bold">done</span>
+              <span>Одобрить</span>
             </button>
             <button
               @click="$emit('open-user-config', u)"
-              class="w-7 h-7 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center transition border-none cursor-pointer p-0"
+              class="w-8 h-8 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-600 rounded-xl flex items-center justify-center transition border-none cursor-pointer p-0"
               title="Настройки"
             >
-              <span class="material-symbols-outlined text-[15px] font-bold">settings</span>
+              <span class="material-symbols-outlined text-[16px] font-bold">settings</span>
             </button>
           </div>
         </div>

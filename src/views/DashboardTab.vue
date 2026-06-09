@@ -1,6 +1,6 @@
 <template>
           <div
-            class="max-w-md mx-auto w-full space-y-4 fade-transition pb-20"
+            class="max-w-2xl mx-auto w-full space-y-4 fade-transition pb-20"
           >
             <!-- Period Selector -->
             <div class="flex gap-2 items-center">
