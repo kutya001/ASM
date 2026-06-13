@@ -76,6 +76,7 @@
 
             <!-- Reopen Welcome screen / About app -->
             <button
+              v-if="user && user.Role !== 'Superadmin'"
               @click="openGamesLobby"
               class="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100/70 rounded-xl font-bold transition border-none cursor-pointer mb-2"
               id="btn-open-games-lobby"

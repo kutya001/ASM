@@ -16,6 +16,7 @@
     </div>
     <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
       <a
+        v-if="user && user.Role !== 'Superadmin'"
         @click="setTab('records')"
         :class="
           activeTab === 'records'
@@ -83,6 +84,21 @@
             class="bi bi-people-fill w-4 h-4 flex items-center justify-center"
           ></i>
           Персонал
+        </a>
+        <a
+          v-if="user.Role === 'Superadmin'"
+          @click="setTab('organizations')"
+          :class="
+            activeTab === 'organizations'
+              ? 'bg-indigo-50 text-indigo-700'
+              : 'text-slate-600 hover:bg-slate-50'
+          "
+          class="flex items-center gap-3 px-4 py-2 text-sm rounded-lg font-semibold cursor-pointer transition-colors"
+        >
+          <i
+            class="bi bi-building w-4 h-4 flex items-center justify-center"
+          ></i>
+          Организации
         </a>
       </template>
 

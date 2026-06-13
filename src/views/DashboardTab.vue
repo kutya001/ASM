@@ -84,6 +84,42 @@
 
               <!-- Swipeable Quick-Filters (Master & Service Chips) -->
               <div class="space-y-3" id="mobile-quick-filters">
+                <!-- Organization Selector for Superadmin -->
+                <div v-if="user.Role === 'Superadmin' && db.organizations && db.organizations.length > 0" class="flex flex-col gap-1">
+                  <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left">Организация:</span>
+                  <div class="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none px-1 -mx-1">
+                    <button
+                      @click="dashFilterOrg = ''; dashFilterMaster = ''; dashFilterService = '';"
+                      class="px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap transition-all border shrink-0 outline-none flex items-center gap-1 cursor-pointer"
+                      :class="
+                        dashFilterOrg === ''
+                          ? 'bg-indigo-600 text-white border-transparent shadow-xs'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      "
+                    >
+                      <span>Все организации</span>
+                    </button>
+                    <button
+                      v-for="org in db.organizations"
+                      :key="org.ID"
+                      @click="
+                        dashFilterOrg =
+                          String(dashFilterOrg) === String(org.ID) ? '' : org.ID;
+                        dashFilterMaster = '';
+                        dashFilterService = '';
+                      "
+                      class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-all border shrink-0 outline-none flex items-center gap-1 cursor-pointer"
+                      :class="
+                        String(dashFilterOrg) === String(org.ID)
+                          ? 'bg-indigo-600 text-white border-transparent shadow-xs'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      "
+                    >
+                      <span>{{ org.Name }}</span>
+                    </button>
+                  </div>
+                </div>
+
                 <!-- Master Chips -->
                 <div v-if="user.Role !== 'Master'" class="flex flex-col gap-1">
                   <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left">Мастер:</span>
@@ -100,7 +136,7 @@
                       <span>Все мастера</span>
                     </button>
                     <button
-                      v-for="m in mastersList"
+                      v-for="m in visibleMastersList"
                       :key="m.ID"
                       @click="
                         dashFilterMaster =
@@ -134,7 +170,7 @@
                       <span>Все услуги</span>
                     </button>
                     <button
-                      v-for="s in sortedServices"
+                      v-for="s in visibleServicesList"
                       :key="s.ID"
                       @click="
                         dashFilterService =
@@ -790,6 +826,7 @@ export default {
     return {
       dashboardPeriod: "all",
       dashboardCustomDate: "",
+      dashFilterOrg: "",
       dashFilterMaster: "",
       dashFilterService: "",
       dashFilterDate: "",
@@ -806,6 +843,11 @@ export default {
       return this.db.records.filter((r) => {
         if (r.Status !== "Выполнен") return false;
         if (!r.StartTime) return false;
+
+        // Organization filter (only for Superadmin)
+        if (this.user && this.user.Role === "Superadmin" && this.dashFilterOrg) {
+          if (String(r.OrganizationID) !== String(this.dashFilterOrg)) return false;
+        }
 
         // Search query filter
         if (this.searchQuery) {
@@ -880,6 +922,20 @@ export default {
         0,
       );
       return { count: recs.length, sum: sum };
+    },
+    visibleMastersList() {
+      if (!this.mastersList) return [];
+      if (this.user && this.user.Role === 'Superadmin' && this.dashFilterOrg) {
+        return this.mastersList.filter(m => String(m.OrganizationID) === String(this.dashFilterOrg));
+      }
+      return this.mastersList;
+    },
+    visibleServicesList() {
+      if (!this.sortedServices) return [];
+      if (this.user && this.user.Role === 'Superadmin' && this.dashFilterOrg) {
+        return this.sortedServices.filter(s => String(s.OrganizationID) === String(this.dashFilterOrg));
+      }
+      return this.sortedServices;
     },
     dashMasterStats() {
       let map = {};
@@ -1102,6 +1158,7 @@ export default {
   },
   methods: {
     clearAllDashFilters() {
+      this.dashFilterOrg = "";
       this.dashFilterMaster = "";
       this.dashFilterService = "";
       this.dashFilterDate = "";

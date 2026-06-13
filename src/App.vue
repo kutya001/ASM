@@ -132,6 +132,11 @@
             @approve-user="approveUser"
             @open-user-config="openUserConfigModal"
           />
+
+          <OrganizationsTab
+            v-if="activeTab === 'organizations' && user.Role === 'Superadmin'"
+            :db="db"
+          />
         </div>
 
         <div
@@ -175,6 +180,7 @@ import UsersTab from "./views/UsersTab.vue";
 import RefsTab from "./views/RefsTab.vue";
 import DashboardTab from "./views/DashboardTab.vue";
 import RecordsTab from "./views/RecordsTab.vue";
+import OrganizationsTab from "./views/OrganizationsTab.vue";
 import WelcomeScreen from "./views/WelcomeScreen.vue";
 import AuthView from "./views/AuthView.vue";
 import Sidebar from "./components/layout/Sidebar.vue";
@@ -194,6 +200,7 @@ export default {
     RefsTab,
     DashboardTab,
     RecordsTab,
+    OrganizationsTab,
     WelcomeScreen,
     AuthView,
     Sidebar,
@@ -217,6 +224,16 @@ export default {
       advFilterBrand: "",
       advFilterModel: "",
     };
+  },
+  watch: {
+    user: {
+      immediate: true,
+      handler(newUser) {
+        if (newUser && newUser.Role === 'Superadmin' && this.activeTab === 'records') {
+          this.activeTab = 'dashboard';
+        }
+      }
+    }
   },
   computed: {
     ...mapState(useMainStore, [

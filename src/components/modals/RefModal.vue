@@ -25,7 +25,7 @@
           class="modal-body bg-slate-50/50 p-6 space-y-4"
           v-if="refMeta[activeRefTab]"
         >
-          <div v-for="f in refMeta[activeRefTab].fields" :key="f.k">
+          <div v-for="f in activeFields" :key="f.k">
             <label
               class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
               >{{ f.l }}</label
@@ -37,6 +37,15 @@
             >
               <option v-for="b in sortedBrands" :key="b.ID" :value="b.ID">
                 {{ b.Name }}
+              </option>
+            </select>
+            <select
+              v-else-if="f.t === 'selectOrg'"
+              v-model="refForm[f.k]"
+              class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm outline-none focus:border-indigo-500"
+            >
+              <option v-for="org in dbOrganizations" :key="org.ID" :value="org.ID">
+                {{ org.Name }}
               </option>
             </select>
             <input
@@ -124,6 +133,17 @@ export default {
     user() {
       return this.store.user;
     },
+    activeFields() {
+      if (!this.refMeta[this.activeRefTab]) return [];
+      let fields = [...this.refMeta[this.activeRefTab].fields];
+      if (this.activeRefTab === 'services' && this.user && this.user.Role === 'Superadmin') {
+        fields.push({ k: "OrganizationID", l: "Организация", t: "selectOrg" });
+      }
+      return fields;
+    },
+    dbOrganizations() {
+      return this.store.db.organizations || [];
+    },
   },
   mounted() {
     if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
@@ -171,11 +191,19 @@ export default {
         payload.Name = nameVal;
 
         if (this.activeRefTab === 'services') {
-          payload.OrganizationID = this.user.OrganizationID;
+          if (this.user.Role === 'Superadmin') {
+            if (!payload.OrganizationID) {
+              this.store.showToast("Выберите организацию для услуги", "error");
+              this.isSaving = false;
+              return;
+            }
+          } else {
+            payload.OrganizationID = this.user.OrganizationID;
+          }
           const list = this.store.db.services || [];
-          const exists = list.some(x => x.ID !== payload.ID && String(x.Name || '').trim().toLowerCase() === nameVal.toLowerCase());
+          const exists = list.some(x => x.ID !== payload.ID && String(x.Name || '').trim().toLowerCase() === nameVal.toLowerCase() && String(x.OrganizationID) === String(payload.OrganizationID));
           if (exists) {
-            this.store.showToast("Такая услуга уже существует", "error");
+            this.store.showToast("Такая услуга уже существует в этой организации", "error");
             this.isSaving = false;
             return;
           }

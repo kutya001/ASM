@@ -72,6 +72,7 @@ const TABLE_MAP = {
   Models: "models",
   WelcomeScreens: "welcome_screens",
   GameRecords: "game_records",
+  Organizations: "organizations",
 };
 
 // Store key → DB table name
@@ -83,6 +84,7 @@ const STORE_KEY_MAP = {
   models: "models",
   welcomescreens: "welcome_screens",
   gamerecords: "game_records",
+  organizations: "organizations",
 };
 
 /**

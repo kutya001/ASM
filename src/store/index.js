@@ -27,7 +27,7 @@ export const useMainStore = defineStore("main", {
     }
     return {
       user: savedUser,
-      db: { records: [], services: [], brands: [], models: [], users: [], welcomescreens: [], gamerecords: [] },
+      db: { records: [], services: [], brands: [], models: [], users: [], welcomescreens: [], gamerecords: [], organizations: [] },
       syncQueue: [],
       isSyncing: false,
       toasts: [],
@@ -473,8 +473,8 @@ export const useMainStore = defineStore("main", {
     startRealtimeSync() {
       if (this._realtimeChannel) {
         supabase.removeChannel(this._realtimeChannel);
+        this._realtimeChannel = null;
       }
-
       const tableToStoreKey = {
         records: "records",
         services: "services",
@@ -483,6 +483,7 @@ export const useMainStore = defineStore("main", {
         models: "models",
         welcome_screens: "welcomescreens",
         game_records: "gamerecords",
+        organizations: "organizations",
       };
 
       const FIELD_MAPS = {
@@ -493,6 +494,7 @@ export const useMainStore = defineStore("main", {
         models: { id: "ID", brand_id: "BrandID", name: "Name" },
         welcome_screens: { id: "ID", title: "Title", text: "Text" },
         game_records: { id: "ID", user_id: "UserID", username: "Username", game_id: "GameID", start_time: "StartTime", play_time: "PlayTime", score: "Score" },
+        organizations: { id: "ID", name: "Name" },
       };
 
       function mapRow(table, dbRow) {

@@ -28,6 +28,7 @@
       >
     </button>
     <button
+      v-if="user && user.Role !== 'Superadmin'"
       @click="setTab('records')"
       class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
       :class="
@@ -98,6 +99,30 @@
       <span
         class="text-[9px] font-bold tracking-wider uppercase leading-none mt-1"
         >Штат</span
+      >
+    </button>
+    <button
+      v-if="user && user.Role === 'Superadmin'"
+      @click="setTab('organizations')"
+      class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
+      :class="
+        activeTab === 'organizations'
+          ? 'bg-indigo-50 text-indigo-600 font-bold'
+          : 'text-slate-400 hover:text-slate-600 bg-transparent'
+      "
+    >
+      <div class="flex h-6 items-center justify-center">
+        <span
+          class="material-symbols-outlined text-[19px]"
+          :style="
+            activeTab === 'organizations' ? 'font-variation-settings: \'FILL\' 1;' : ''
+          "
+          >domain</span
+        >
+      </div>
+      <span
+        class="text-[9px] font-bold tracking-wider uppercase leading-none mt-1"
+        >Орг.</span
       >
     </button>
   </nav>

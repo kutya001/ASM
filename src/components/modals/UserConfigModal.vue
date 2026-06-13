@@ -35,6 +35,20 @@
               <option v-if="isGlobalAdmin" value="Superadmin">Супер-администратор</option>
             </select>
           </div>
+          <div v-if="isGlobalAdmin && store.db.organizations && store.db.organizations.length > 0">
+            <label
+              class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+              >Организация</label
+            >
+            <select
+              v-model="userConfigForm.OrganizationID"
+              class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm outline-none focus:border-indigo-500"
+            >
+              <option v-for="org in store.db.organizations" :key="org.ID" :value="org.ID">
+                {{ org.Name }}
+              </option>
+            </select>
+          </div>
           <div>
             <label
               class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
@@ -133,6 +147,7 @@ export default {
         Role: u.Role,
         Name: u.Name || "",
         Phone: u.Phone || "+996 ",
+        OrganizationID: u.OrganizationID || "",
         Password: "", // Do not prefill password for security
       };
       if (this.bsModal) this.bsModal.show();
@@ -153,6 +168,9 @@ export default {
         if (obj.Password) {
           updateData.Password = obj.Password;
         }
+        if (this.isGlobalAdmin) {
+          updateData.OrganizationID = obj.OrganizationID;
+        }
 
         if (idx > -1) {
           this.store.db.users[idx].Role = obj.Role;
@@ -160,6 +178,9 @@ export default {
           this.store.db.users[idx].Phone = obj.Phone;
           if (obj.Password) {
             this.store.db.users[idx].Password = obj.Password;
+          }
+          if (this.isGlobalAdmin) {
+            this.store.db.users[idx].OrganizationID = obj.OrganizationID;
           }
         }
         
