@@ -27,7 +27,22 @@ export const useMainStore = defineStore("main", {
     }
     return {
       user: savedUser,
-      db: { records: [], services: [], brands: [], models: [], users: [], welcomescreens: [], gamerecords: [], organizations: [] },
+      db: { 
+        records: [], 
+        services: [], 
+        brands: [], 
+        models: [], 
+        users: [], 
+        welcomescreens: [], 
+        gamerecords: [], 
+        organizations: [],
+        servicecategories: [],
+        globalservices: [],
+        organizationbrands: [],
+        organizationmodels: [],
+        globalbrands: [],
+        globalmodels: []
+      },
       syncQueue: [],
       isSyncing: false,
       toasts: [],
@@ -271,6 +286,13 @@ export const useMainStore = defineStore("main", {
         users: [],
         welcomescreens: [],
         gamerecords: [],
+        organizations: [],
+        servicecategories: [],
+        globalservices: [],
+        organizationbrands: [],
+        organizationmodels: [],
+        globalbrands: [],
+        globalmodels: []
       };
       this.syncStatus = "synced";
       localStorage.removeItem("currentUser");
@@ -350,7 +372,13 @@ export const useMainStore = defineStore("main", {
         } else if (taskName === "deleteRow" && sheet) {
           const key = sheet.toLowerCase();
           if (this.db[key]) {
-            this.db[key] = this.db[key].filter(r => r.ID !== payload);
+            if (typeof payload === "object" && payload !== null) {
+              this.db[key] = this.db[key].filter(r => {
+                return !Object.entries(payload).every(([k, v]) => String(r[k]) === String(v));
+              });
+            } else {
+              this.db[key] = this.db[key].filter(r => r.ID !== payload);
+            }
           }
         }
       } catch (optErr) {
@@ -492,17 +520,25 @@ export const useMainStore = defineStore("main", {
         welcome_screens: "welcomescreens",
         game_records: "gamerecords",
         organizations: "organizations",
+        service_categories: "servicecategories",
+        global_services: "globalservices",
+        organization_brands: "organizationbrands",
+        organization_models: "organizationmodels",
       };
 
       const FIELD_MAPS = {
         users: { id: "ID", username: "Username", password: "Password", name: "Name", phone: "Phone", role: "Role", status: "Status", organization_id: "OrganizationID" },
         records: { id: "ID", client_name: "ClientName", phone: "Phone", car_number: "CarNumber", brand_id: "BrandID", model_id: "ModelID", master_id: "MasterID", start_time: "StartTime", end_time: "EndTime", status: "Status", services_json: "ServicesJSON", additional_services: "AdditionalServices", total_amount: "TotalAmount", comment: "Comment", is_paid: "IsPaid", organization_id: "OrganizationID" },
-        services: { id: "ID", name: "Name", price: "Price", organization_id: "OrganizationID" },
+        services: { id: "ID", name: "Name", price: "Price", organization_id: "OrganizationID", category_id: "CategoryID", global_service_id: "GlobalServiceID", is_custom: "IsCustom" },
         brands: { id: "ID", name: "Name" },
         models: { id: "ID", brand_id: "BrandID", name: "Name" },
         welcome_screens: { id: "ID", title: "Title", text: "Text" },
         game_records: { id: "ID", user_id: "UserID", username: "Username", game_id: "GameID", start_time: "StartTime", play_time: "PlayTime", score: "Score" },
         organizations: { id: "ID", name: "Name" },
+        service_categories: { id: "ID", name: "Name" },
+        global_services: { id: "ID", category_id: "CategoryID", name: "Name", default_price: "DefaultPrice" },
+        organization_brands: { organization_id: "OrganizationID", brand_id: "BrandID" },
+        organization_models: { organization_id: "OrganizationID", model_id: "ModelID" },
       };
 
       function mapRow(table, dbRow) {
@@ -512,6 +548,12 @@ export const useMainStore = defineStore("main", {
         const result = {};
         for (const [key, value] of Object.entries(dbRow)) {
           result[map[key] || key] = value;
+        }
+        if (table === "organization_brands") {
+          result.ID = `${dbRow.organization_id}_${dbRow.brand_id}`;
+        }
+        if (table === "organization_models") {
+          result.ID = `${dbRow.organization_id}_${dbRow.model_id}`;
         }
         return result;
       }
@@ -563,8 +605,15 @@ export const useMainStore = defineStore("main", {
             }
           } else if (eventType === "DELETE") {
             const oldRow = mapRow(table, payload.old);
-            if (oldRow && oldRow.ID) {
-              this.db[storeKey] = this.db[storeKey].filter(r => r.ID !== oldRow.ID);
+            if (oldRow) {
+              if (table === "organization_brands" || table === "organization_models") {
+                const targetId = table === "organization_brands" 
+                  ? `${oldRow.OrganizationID}_${oldRow.BrandID}` 
+                  : `${oldRow.OrganizationID}_${oldRow.ModelID}`;
+                this.db[storeKey] = this.db[storeKey].filter(r => r.ID !== targetId);
+              } else if (oldRow.ID) {
+                this.db[storeKey] = this.db[storeKey].filter(r => r.ID !== oldRow.ID);
+              }
             }
           }
         })

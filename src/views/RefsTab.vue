@@ -1,228 +1,423 @@
 <template>
-  <div class="space-y-4 max-w-2xl mx-auto w-full pb-20">
-    <!-- Grid view -->
-    <div v-if="refTab === 'grid'" class="fade-transition">
-      <h1
-        class="text-xl font-bold tracking-tight text-center mb-4 font-heading text-slate-800"
-      >
-        Справочники
+  <div class="space-y-4 max-w-3xl mx-auto w-full pb-20 select-none">
+    <!-- Superadmin views -->
+    <div v-if="isGlobalAdmin" class="fade-transition space-y-4">
+      <h1 class="text-xl font-bold tracking-tight text-center mb-2 font-heading text-slate-800">
+        Управление шаблонами (Супер-админ)
       </h1>
-      <div class="grid grid-cols-3 gap-2.5">
-        <div
-          v-for="(meta, key) in refMeta"
-          :key="key"
-          @click="refTab = key"
-          class="bg-surface rounded-xl p-3 shadow-sm border border-border-subtle/50 cursor-pointer flex flex-col items-center justify-center gap-2 text-center active:scale-95 transition-all hover:bg-slate-50"
-        >
-          <div
-            class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"
-          >
-            <span
-              class="material-symbols-outlined text-[18px] font-medium"
-              >{{ meta.icon }}</span
-            >
-          </div>
-          <div>
-            <div
-              class="font-bold text-slate-800 text-xs font-heading"
-            >
-              {{ meta.title }}
-            </div>
-            <div class="text-[10px] text-slate-400 font-semibold mt-0.5 whitespace-nowrap">
-              {{ db[key] ? db[key].length : 0 }} зап.
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="mt-6 border-t border-slate-100 pt-4">
-        <h2 class="font-bold text-xs mb-1.5 text-slate-700 font-heading">
-          Управление данными
-        </h2>
-        <div
-          class="text-[11px] text-slate-500 leading-relaxed font-semibold"
-        >
-          Справочники позволяют быстро заполнять карточки обслуживания.
-          Глобальные справочники марок и моделей автомобилей редактируются только Супер-администратором.
-          Цены и список услуг вы можете настраивать индивидуально для вашей организации.
-        </div>
-      </div>
-    </div>
 
-    <!-- List View -->
-    <div v-else class="fade-transition space-y-4">
-      <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-2">
-          <button
-            @click="refTab = 'grid'"
-            class="p-2 rounded-full hover:bg-black/5 active:bg-black/10 transition-colors -ml-2"
-          >
-            <span class="material-symbols-outlined text-text-muted"
-              >arrow_back</span
-            >
-          </button>
-          <h5 class="m-0 font-bold text-text-main text-lg font-heading">
-            {{ refMeta[refTab].title }}
-          </h5>
-        </div>
+      <!-- Admin Tab switcher -->
+      <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
         <button
-          v-if="refTab === 'services' || isGlobalAdmin"
-          @click="$emit('open-bulk-modal')"
-          class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg flex items-center gap-1.5 transition-colors border border-indigo-100"
+          v-for="(title, key) in adminTabs"
+          :key="key"
+          @click="activeAdminTab = key"
+          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer"
+          :class="activeAdminTab === key ? 'bg-white text-indigo-600 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'"
         >
-          <span class="material-symbols-outlined text-[14px]">upload_file</span>
-          Импорт
+          {{ title }}
         </button>
       </div>
 
-      <div
-        v-if="refTab !== 'models'"
-        class="bg-surface border border-border-subtle/50 rounded-2xl shadow-soft flex flex-col overflow-hidden"
-      >
-        <div class="overflow-x-auto">
+      <!-- Categories Admin -->
+      <div v-if="activeAdminTab === 'categories'" class="space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-slate-700 m-0 uppercase tracking-wider">Категории услуг</h3>
+          <button @click="openAddModal('categories')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">add</span> Добавить
+          </button>
+        </div>
+        <div class="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
           <table class="w-full text-left border-collapse table-auto">
-            <thead class="bg-slate-50 border-b border-border-subtle/50">
+            <thead class="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th
-                  v-for="f in refMeta[refTab].fields"
-                  :key="f.k"
-                  class="px-3 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-                >
-                  {{ f.l }}
-                </th>
-                <th v-if="refTab === 'services' || isGlobalAdmin" class="px-3 py-1 w-14"></th>
+                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Название</th>
+                <th class="px-4 py-2 w-14"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr
-                v-for="item in (refTab === 'services' ? filteredServices : filteredBrands)"
-                :key="item.ID"
-                class="hover:bg-slate-50 group cursor-pointer"
-                @click="refTab === 'services' || isGlobalAdmin ? $emit('open-ref-modal', refTab, item) : null"
-              >
-                <td
-                  v-for="f in refMeta[refTab].fields"
-                  class="px-3 py-0.5 text-xs font-semibold text-slate-800 shrink-0"
-                >
-                  <span v-if="f.t === 'number'">{{
-                    Number(item[f.k]).toLocaleString()
-                  }}</span>
-                  <span v-else-if="f.t === 'selectBrand'">{{
-                    getBrandName(item[f.k])
-                  }}</span>
-                  <span v-else>{{ item[f.k] }}</span>
-                </td>
-                <td class="px-3 py-0.5 text-right shrink-0" @click.stop v-if="refTab === 'services' || isGlobalAdmin">
-                  <button
-                    class="p-0.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                    @click="$emit('del-row', refMeta[refTab].sheet, item.ID, refTab)"
-                  >
+              <tr v-for="cat in db.servicecategories" :key="cat.ID" class="hover:bg-slate-50">
+                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ cat.Name }}</td>
+                <td class="px-4 py-2 text-right shrink-0">
+                  <button @click="deleteItem('ServiceCategories', cat.ID, 'servicecategories')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
                     <i class="bi bi-trash-fill text-xs"></i>
                   </button>
                 </td>
               </tr>
-              <tr v-if="refTab === 'services' && filteredServices.length === 0">
-                <td
-                  :colspan="refMeta[refTab].fields.length + 1"
-                  class="px-3 py-4 text-center text-slate-400 font-medium text-xs"
-                >
-                  Нет услуг
-                </td>
-              </tr>
-              <tr v-if="refTab === 'brands' && filteredBrands.length === 0">
-                <td
-                  :colspan="refMeta[refTab].fields.length + 1"
-                  class="px-3 py-4 text-center text-slate-400 font-medium text-xs"
-                >
-                  Нет марок
-                </td>
+              <tr v-if="!db.servicecategories || db.servicecategories.length === 0">
+                <td colspan="2" class="px-4 py-6 text-center text-slate-400 font-medium text-xs">Нет категорий</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div v-else class="space-y-3">
-        <div
-          v-for="group in filteredGroupedModels"
-          :key="group.brand.ID"
-          class="border border-slate-200/50 rounded-2xl bg-slate-50/50 overflow-hidden shadow-sm"
-        >
-          <div
-            class="bg-slate-100/70 px-3 py-1 flex justify-between items-center border-b border-slate-200/50 select-none cursor-pointer hover:bg-slate-200/50 transition-colors"
-            @click="toggleBrand(group.brand.ID)"
-          >
-            <div class="flex items-center gap-1.5">
-               <span
-                class="material-symbols-outlined text-[14px] text-slate-400 transition-transform duration-200"
-                :class="{ 'rotate-180': searchQuery || expandedBrands.includes(group.brand.ID) }"
-              >
-                expand_more
-              </span>
-              <span
-                class="text-[10px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1"
-              >
-                <i class="bi bi-car-front-fill text-[11px] text-indigo-500"></i>
-                {{ group.brand.Name }}
-              </span>
-            </div>
-            <span
-              class="text-[8px] text-indigo-600 font-bold uppercase bg-indigo-50 px-1.5 py-0.5 rounded-full border border-indigo-150/30"
-              >{{ group.models.length }} мод.</span
-            >
-          </div>
-          <div class="divide-y divide-slate-100 bg-white" v-show="searchQuery || expandedBrands.includes(group.brand.ID)">
-            <div
-              v-for="m in group.models"
-              :key="m.ID"
-              @click="isGlobalAdmin ? $emit('open-ref-modal', 'models', m) : null"
-              class="px-3 py-0.5 flex justify-between items-center hover:bg-slate-50/60 cursor-pointer transition"
-            >
-              <span
-                class="text-xs font-bold text-slate-800"
-                >{{ m.Name }}</span
-              >
-              <button
-                v-if="isGlobalAdmin"
-                class="p-0.5 px-1 text-slate-400 hover:text-red-600 hover:bg-red-50/40 rounded-lg transition"
-                @click.stop="$emit('del-row', refMeta['models'].sheet, m.ID, 'models')"
-              >
-                <i class="bi bi-trash-fill text-xs"></i>
-              </button>
-            </div>
-            <div
-              v-if="group.models.length === 0"
-              class="px-3 py-2 text-center text-slate-400 font-semibold text-[11px] bg-slate-50/20 italic"
-            >
-              Нет моделей
-            </div>
-          </div>
+      <!-- Global Services Templates Admin -->
+      <div v-if="activeAdminTab === 'globalservices'" class="space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-slate-700 m-0 uppercase tracking-wider">Шаблоны услуг</h3>
+          <button @click="openAddModal('globalservices')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">add</span> Добавить
+          </button>
         </div>
-        <div
-          v-if="filteredGroupedModels.length === 0"
-          class="px-4 py-6 text-center text-slate-400 font-medium text-sm"
-        >
-          Нет моделей
+        <div class="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
+          <table class="w-full text-left border-collapse table-auto">
+            <thead class="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Категория</th>
+                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Услуга</th>
+                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Цена шаблона (сом)</th>
+                <th class="px-4 py-2 w-14"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="gs in db.globalservices" :key="gs.ID" class="hover:bg-slate-50">
+                <td class="px-4 py-2 text-xs font-semibold text-slate-500">{{ getCategoryName(gs.CategoryID) }}</td>
+                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ gs.Name }}</td>
+                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ Number(gs.DefaultPrice).toLocaleString() }} сом</td>
+                <td class="px-4 py-2 text-right shrink-0">
+                  <button @click="deleteItem('GlobalServices', gs.ID, 'globalservices')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+                    <i class="bi bi-trash-fill text-xs"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="!db.globalservices || db.globalservices.length === 0">
+                <td colspan="4" class="px-4 py-6 text-center text-slate-400 font-medium text-xs">Нет шаблонов услуг</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Brands Admin -->
+      <div v-if="activeAdminTab === 'brands'" class="space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-slate-700 m-0 uppercase tracking-wider">Марки автомобилей</h3>
+          <button @click="openAddModal('brands')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">add</span> Добавить
+          </button>
+        </div>
+        <div class="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
+          <table class="w-full text-left border-collapse table-auto">
+            <thead class="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Название марки</th>
+                <th class="px-4 py-2 w-14"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="b in db.globalbrands" :key="b.ID" class="hover:bg-slate-50">
+                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ b.Name }}</td>
+                <td class="px-4 py-2 text-right shrink-0">
+                  <button @click="deleteItem('Brands', b.ID, 'globalbrands')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+                    <i class="bi bi-trash-fill text-xs"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="!db.globalbrands || db.globalbrands.length === 0">
+                <td colspan="2" class="px-4 py-6 text-center text-slate-400 font-medium text-xs">Нет марок</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Models Admin -->
+      <div v-if="activeAdminTab === 'models'" class="space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-slate-700 m-0 uppercase tracking-wider">Модели автомобилей</h3>
+          <button @click="openAddModal('models')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">add</span> Добавить
+          </button>
+        </div>
+        <div class="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
+          <table class="w-full text-left border-collapse table-auto">
+            <thead class="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Марка</th>
+                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Модель</th>
+                <th class="px-4 py-2 w-14"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="m in db.globalmodels" :key="m.ID" class="hover:bg-slate-50">
+                <td class="px-4 py-2 text-xs font-semibold text-slate-500">{{ getBrandName(m.BrandID) }}</td>
+                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ m.Name }}</td>
+                <td class="px-4 py-2 text-right shrink-0">
+                  <button @click="deleteItem('Models', m.ID, 'globalmodels')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+                    <i class="bi bi-trash-fill text-xs"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="!db.globalmodels || db.globalmodels.length === 0">
+                <td colspan="3" class="px-4 py-6 text-center text-slate-400 font-medium text-xs">Нет моделей</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <!-- FAB -->
-    <button
-      v-if="refTab !== 'grid' && (refTab === 'services' || isGlobalAdmin)"
-      @click="$emit('open-ref-modal', refTab, -1)"
-      class="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-fab hover:bg-indigo-700 active:scale-95 transition-all z-20 md:bottom-12 md:right-12"
-    >
-      <span
-        class="material-symbols-outlined text-[28px]"
-        style="font-variation-settings: &quot;wght&quot; 600"
-        >add</span
-      >
-    </button>
+    <!-- Organization Scoped views -->
+    <div v-else class="fade-transition space-y-4">
+      <h1 class="text-xl font-bold tracking-tight text-center mb-2 font-heading text-slate-800">
+        Настройка СТО (Справочники)
+      </h1>
+
+      <!-- Org Tab switcher -->
+      <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+        <button
+          @click="activeOrgTab = 'services'"
+          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer"
+          :class="activeOrgTab === 'services' ? 'bg-white text-indigo-600 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'"
+        >
+          Услуги (Прайс-лист)
+        </button>
+        <button
+          @click="activeOrgTab = 'cars'"
+          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer"
+          :class="activeOrgTab === 'cars' ? 'bg-white text-indigo-600 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'"
+        >
+          Обслуживаемые автомобили
+        </button>
+      </div>
+
+      <!-- Services List & Import for Tenant -->
+      <div v-if="activeOrgTab === 'services'" class="space-y-4">
+        <div class="flex justify-between items-center">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Прайс-лист нашего СТО</div>
+          <div class="flex gap-2">
+            <button @click="showImportServicesModal = true" class="h-8 px-3 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-lg border border-indigo-100 hover:bg-indigo-100 transition cursor-pointer flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px]">import_contacts</span> Шаблоны
+            </button>
+            <button @click="openAddCustomServiceModal" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px]">add</span> Своя услуга
+            </button>
+          </div>
+        </div>
+
+        <!-- Grouped services list -->
+        <div class="space-y-4">
+          <div
+            v-for="group in tenantGroupedServices"
+            :key="group.category.ID"
+            class="border border-slate-200/50 rounded-2xl bg-slate-50/50 overflow-hidden shadow-sm"
+          >
+            <div class="bg-slate-100/70 px-4 py-2.5 flex justify-between items-center border-b border-slate-200/50">
+              <span class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="bi bi-gear-wide-connected text-indigo-500"></i>
+                {{ group.category.Name }}
+              </span>
+              <span class="text-[9px] text-indigo-600 font-bold uppercase bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-150/30">
+                {{ group.services.length }} усл.
+              </span>
+            </div>
+            <div class="divide-y divide-slate-100 bg-white">
+              <div
+                v-for="s in group.services"
+                :key="s.ID"
+                class="px-4 py-2.5 flex justify-between items-center hover:bg-slate-50/60 transition group"
+              >
+                <div class="space-y-0.5">
+                  <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    {{ s.Name }}
+                    <span v-if="s.IsCustom" class="text-[8px] bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.25 rounded-md uppercase font-black tracking-wider">Кастомная</span>
+                    <span v-else class="text-[8px] bg-slate-50 text-slate-500 border border-slate-200 px-1.5 py-0.25 rounded-md uppercase font-black tracking-wider">Шаблон</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-xs font-black text-slate-800">{{ Number(s.Price).toLocaleString() }} сом</div>
+                  <div class="flex items-center gap-1.5">
+                    <!-- Edit price button -->
+                    <button @click="editServicePrice(s)" class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+                      <i class="bi bi-pencil-fill text-[10px]"></i>
+                    </button>
+                    <!-- Delete service button -->
+                    <button @click="deleteItem('Services', s.ID, 'services')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+                      <i class="bi bi-trash-fill text-[10px]"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="tenantGroupedServices.length === 0" class="bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs">
+             Ваш прайс-лист пока пуст. Добавьте услуги из шаблонов или создайте свои уникальные услуги.
+          </div>
+        </div>
+      </div>
+
+      <!-- Cars Configuration for Tenant -->
+      <div v-if="activeOrgTab === 'cars'" class="space-y-4">
+        <div class="bg-amber-950/40 border border-amber-500/20 text-amber-300 rounded-xl p-3.5 text-xs font-semibold leading-relaxed">
+          💡 Отметьте галочками марки и модели автомобилей, которые обслуживает ваше СТО. Они будут доступны вашим мастерам при создании новых заказ-нарядов.
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Brands Checklist -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <h3 class="text-xs font-black text-slate-600 uppercase tracking-wider m-0">1. Выберите марки автомобилей</h3>
+            <div class="divide-y divide-slate-100 max-h-[300px] overflow-y-auto pr-1">
+              <label v-for="b in db.globalbrands" :key="b.ID" class="flex items-center justify-between py-2 cursor-pointer hover:bg-slate-50/50 transition">
+                <span class="text-xs font-bold text-slate-800">{{ b.Name }}</span>
+                <input
+                  type="checkbox"
+                  :checked="isOrgBrandActive(b.ID)"
+                  @change="toggleOrgBrand(b.ID)"
+                  class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- Models Checklist (dependent on selected brand) -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3 flex flex-col">
+            <h3 class="text-xs font-black text-slate-600 uppercase tracking-wider m-0">2. Выберите модели марки</h3>
+            <select v-model="selectedConfigBrandId" class="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-700 cursor-pointer">
+              <option value="" disabled>-- Выберите марку --</option>
+              <option v-for="b in activeOrgBrands" :key="b.ID" :value="b.ID">{{ b.Name }}</option>
+            </select>
+
+            <div v-if="selectedConfigBrandId" class="divide-y divide-slate-100 max-h-[250px] overflow-y-auto pr-1 flex-1 mt-2">
+              <label v-for="m in brandModels(selectedConfigBrandId)" :key="m.ID" class="flex items-center justify-between py-2 cursor-pointer hover:bg-slate-50/50 transition">
+                <span class="text-xs font-bold text-slate-800">{{ m.Name }}</span>
+                <input
+                  type="checkbox"
+                  :checked="isOrgModelActive(m.ID)"
+                  @change="toggleOrgModel(m.ID)"
+                  class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                />
+              </label>
+              <div v-if="brandModels(selectedConfigBrandId).length === 0" class="py-6 text-center text-slate-400 font-bold text-xs">
+                У этой марки нет зарегистрированных моделей в шаблонах.
+              </div>
+            </div>
+            <div v-else class="flex-1 py-12 text-center text-slate-400 font-bold text-xs">
+              Выберите активную марку сверху, чтобы настроить её модели.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Template Import Services Modal (Tenant) -->
+    <div v-if="showImportServicesModal" class="fixed inset-0 z-50 bg-[#090D1A]/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] animate-fade-in">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+          <h3 class="text-base font-black text-slate-800 m-0 uppercase tracking-wider">Добавление услуг из шаблонов</h3>
+          <button @click="showImportServicesModal = false" class="p-1 text-slate-400 hover:text-slate-600 rounded-full border-none bg-transparent cursor-pointer flex items-center">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        
+        <!-- List of unimported templates -->
+        <div class="p-6 overflow-y-auto flex-1 space-y-4">
+          <div v-for="cat in db.servicecategories" :key="cat.ID" class="space-y-2">
+            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{{ cat.Name }}</h4>
+            <div class="space-y-1.5">
+              <div
+                v-for="gs in unimportedGlobalServices(cat.ID)"
+                :key="gs.ID"
+                class="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between gap-3"
+              >
+                <div class="text-xs font-bold text-slate-800 max-w-[65%]">{{ gs.Name }}</div>
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden h-8 w-24">
+                    <input
+                      type="number"
+                      v-model.number="templatePrices[gs.ID]"
+                      class="w-full px-2 text-center text-xs font-black text-slate-800 border-none outline-none"
+                      placeholder="Цена"
+                    />
+                  </div>
+                  <button @click="importService(gs)" class="h-8 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg border-none cursor-pointer transition">
+                    Добавить
+                  </button>
+                </div>
+              </div>
+              <div v-if="unimportedGlobalServices(cat.ID).length === 0" class="text-[10px] text-slate-400 font-semibold italic">Все шаблоны добавлены</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Price Modal (Tenant) -->
+    <div v-if="editingService" class="fixed inset-0 z-50 bg-[#090D1A]/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-100 animate-fade-in p-6 space-y-4">
+        <h3 class="text-sm font-black text-slate-850 m-0 uppercase tracking-wider">Редактировать цену</h3>
+        <div class="space-y-1">
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Услуга</div>
+          <div class="text-xs font-bold text-slate-700">{{ editingService.Name }}</div>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Новая цена (KGS)</label>
+          <input
+            type="number"
+            v-model.number="newPriceValue"
+            class="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 focus:border-indigo-500"
+          />
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button @click="editingService = null" class="flex-1 h-11 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs transition cursor-pointer">
+            Отмена
+          </button>
+          <button @click="saveNewPrice" class="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition cursor-pointer border-none shadow-md shadow-indigo-100">
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Custom Service Modal (Tenant) -->
+    <div v-if="showCustomServiceModal" class="fixed inset-0 z-50 bg-[#090D1A]/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-100 animate-fade-in p-6 space-y-4">
+        <h3 class="text-sm font-black text-slate-850 m-0 uppercase tracking-wider">Новая кастомная услуга</h3>
+        
+        <div class="space-y-1">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Категория</label>
+          <select v-model="customServiceForm.CategoryID" class="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-700 cursor-pointer">
+            <option value="" disabled>-- Выберите категорию --</option>
+            <option v-for="cat in db.servicecategories" :key="cat.ID" :value="cat.ID">{{ cat.Name }}</option>
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Название услуги</label>
+          <input
+            type="text"
+            v-model="customServiceForm.Name"
+            class="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 focus:border-indigo-500"
+            placeholder="Введите название"
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Цена (KGS)</label>
+          <input
+            type="number"
+            v-model.number="customServiceForm.Price"
+            class="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 focus:border-indigo-500"
+            placeholder="Цена в сомах"
+          />
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button @click="showCustomServiceModal = false" class="flex-1 h-11 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs transition cursor-pointer">
+            Отмена
+          </button>
+          <button @click="saveCustomService" class="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition cursor-pointer border-none shadow-md shadow-indigo-100">
+            Создать
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { useMainStore } from "../store";
+import { generateUUID } from "../utils/helpers";
 
 export default {
   name: 'RefsTab',
@@ -230,81 +425,195 @@ export default {
     db: {
       type: Object,
       required: true
-    },
-    groupedModels: {
-      type: Array,
-      required: true
-    },
-    getBrandName: {
-        type: Function,
-        required: true
-    },
-    searchQuery: {
-      type: String,
-      default: ""
     }
   },
   computed: {
+    store() {
+      return useMainStore();
+    },
     isGlobalAdmin() {
-      const store = useMainStore();
-      return store.user && store.user.Role === 'Superadmin';
+      return this.store.user && this.store.user.Role === 'Superadmin';
     },
-    filteredServices() {
-      const list = this.db.services || [];
-      if (!this.searchQuery) return list;
-      const q = this.searchQuery.toLowerCase().trim();
-      return list.filter(item => 
-        String(item.Name || '').toLowerCase().includes(q)
-      );
+    activeOrgBrands() {
+      const activeBrandIds = (this.db.organizationbrands || [])
+        .filter(ob => String(ob.OrganizationID) === String(this.store.user.OrganizationID))
+        .map(ob => ob.BrandID);
+      return (this.db.globalbrands || []).filter(b => activeBrandIds.includes(b.ID));
     },
-    filteredBrands() {
-      const list = this.db.brands || [];
-      if (!this.searchQuery) return list;
-      const q = this.searchQuery.toLowerCase().trim();
-      return list.filter(item => 
-        String(item.Name || '').toLowerCase().includes(q)
-      );
-    },
-    filteredGroupedModels() {
-      const list = this.groupedModels || [];
-      if (!this.searchQuery) return list;
-      const q = this.searchQuery.toLowerCase().trim();
+    tenantGroupedServices() {
+      const categories = this.db.servicecategories || [];
+      const services = this.db.services || [];
       
-      return list.map(group => {
-        const brandMatch = String(group.brand.Name || '').toLowerCase().includes(q);
-        if (brandMatch) {
-          return group;
-        }
-        const filteredModelsList = group.models.filter(m => 
-          String(m.Name || '').toLowerCase().includes(q)
-        );
+      return categories.map(cat => {
         return {
-          brand: group.brand,
-          models: filteredModelsList
+          category: cat,
+          services: services.filter(s => s.CategoryID === cat.ID)
         };
-      }).filter(group => group.models.length > 0);
+      }).filter(group => group.services.length > 0);
     }
   },
   data() {
-      return {
-          refTab: 'grid',
-          expandedBrands: [],
-          refMeta: {
-            services: { title: 'Услуги', icon: 'build', sheet: 'Services', fields: [{k:'Name', l:'Название'}, {k:'Price', l:'Цена (KGS)', t:'number'}] },
-            brands: { title: 'Марки', icon: 'directions_car', sheet: 'Brands', fields: [{k:'Name', l:'Марка'}] },
-            models: { title: 'Модели', icon: 'list_alt', sheet: 'Models', fields: [{k:'BrandID', l:'Привязка (Марка)', t:'selectBrand'}, {k:'Name', l:'Модель'}] }
-          }
+    return {
+      activeAdminTab: 'categories',
+      activeOrgTab: 'services',
+      showImportServicesModal: false,
+      showCustomServiceModal: false,
+      selectedConfigBrandId: '',
+      editingService: null,
+      newPriceValue: 0,
+      templatePrices: {},
+      adminTabs: {
+        categories: 'Категории',
+        globalservices: 'Шаблоны услуг',
+        brands: 'Марки',
+        models: 'Модели'
+      },
+      customServiceForm: {
+        CategoryID: '',
+        Name: '',
+        Price: 0
       }
+    };
   },
-  methods: {
-    toggleBrand(brandId) {
-      if (this.expandedBrands.includes(brandId)) {
-        this.expandedBrands = this.expandedBrands.filter(id => id !== brandId);
-      } else {
-        this.expandedBrands.push(brandId);
+  watch: {
+    showImportServicesModal(val) {
+      if (val) {
+        (this.db.globalservices || []).forEach(gs => {
+          if (!this.templatePrices[gs.ID]) {
+            this.templatePrices[gs.ID] = gs.DefaultPrice;
+          }
+        });
       }
     }
   },
-  emits: ['open-ref-modal', 'del-row', 'open-bulk-modal']
+  methods: {
+    getBrandName(brandId) {
+      const list = this.db.globalbrands || this.db.brands || [];
+      const brand = list.find(b => String(b.ID) === String(brandId));
+      return brand ? brand.Name : '—';
+    },
+    getCategoryName(catId) {
+      const cat = this.db.servicecategories.find(c => c.ID === catId);
+      return cat ? cat.Name : 'Без категории';
+    },
+    openAddModal(tabName) {
+      this.$emit('open-ref-modal', tabName, -1);
+    },
+    deleteItem(sheetName, id, stateKey) {
+      if (confirm('Вы уверены, что хотите удалить эту запись? Это действие может удалить связанные данные.')) {
+        this.$emit('del-row', sheetName, id, stateKey);
+      }
+    },
+    unimportedGlobalServices(catId) {
+      const existingGlobalIds = (this.db.services || [])
+        .filter(s => !s.IsCustom && s.GlobalServiceID)
+        .map(s => s.GlobalServiceID);
+      
+      return (this.db.globalservices || [])
+        .filter(gs => gs.CategoryID === catId && !existingGlobalIds.includes(gs.ID));
+    },
+    importService(gs) {
+      const price = this.templatePrices[gs.ID] !== undefined ? this.templatePrices[gs.ID] : gs.DefaultPrice;
+      const payload = {
+        ID: generateUUID(),
+        Name: gs.Name,
+        Price: price,
+        CategoryID: gs.CategoryID,
+        GlobalServiceID: gs.ID,
+        IsCustom: false,
+        OrganizationID: this.store.user.OrganizationID
+      };
+      this.store.dispatchSync('addRow', payload, 'Services');
+      this.store.showToast(`Услуга "${gs.Name}" успешно добавлена`);
+    },
+    editServicePrice(service) {
+      this.editingService = service;
+      this.newPriceValue = service.Price;
+    },
+    saveNewPrice() {
+      if (this.editingService) {
+        const payload = {
+          ...this.editingService,
+          Price: this.newPriceValue
+        };
+        this.store.dispatchSync('updateRow', payload, 'Services');
+        this.store.showToast(`Цена обновлена`);
+        this.editingService = null;
+      }
+    },
+    openAddCustomServiceModal() {
+      this.customServiceForm = { CategoryID: '', Name: '', Price: 0 };
+      this.showCustomServiceModal = true;
+    },
+    saveCustomService() {
+      const { CategoryID, Name, Price } = this.customServiceForm;
+      if (!CategoryID) return this.store.showToast('Выберите категорию', 'error');
+      if (!Name || !Name.trim()) return this.store.showToast('Укажите название услуги', 'error');
+      
+      const payload = {
+        ID: generateUUID(),
+        Name: Name.trim(),
+        Price: Price || 0,
+        CategoryID: CategoryID,
+        IsCustom: true,
+        OrganizationID: this.store.user.OrganizationID
+      };
+      
+      this.store.dispatchSync('addRow', payload, 'Services');
+      this.store.showToast(`Услуга "${Name}" успешно создана`);
+      this.showCustomServiceModal = false;
+    },
+    isOrgBrandActive(brandId) {
+      return (this.db.organizationbrands || []).some(
+        ob => String(ob.OrganizationID) === String(this.store.user.OrganizationID) && String(ob.BrandID) === String(brandId)
+      );
+    },
+    isOrgModelActive(modelId) {
+      return (this.db.organizationmodels || []).some(
+        om => String(om.OrganizationID) === String(this.store.user.OrganizationID) && String(om.ModelID) === String(modelId)
+      );
+    },
+    toggleOrgBrand(brandId) {
+      const orgId = this.store.user.OrganizationID;
+      const active = this.isOrgBrandActive(brandId);
+      if (active) {
+        this.store.dispatchSync('deleteRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
+        if (String(this.selectedConfigBrandId) === String(brandId)) {
+          this.selectedConfigBrandId = '';
+        }
+      } else {
+        this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
+      }
+    },
+    toggleOrgModel(modelId) {
+      const orgId = this.store.user.OrganizationID;
+      const active = this.isOrgModelActive(modelId);
+      if (active) {
+        this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: modelId }, 'OrganizationModels');
+      } else {
+        this.store.dispatchSync('addRow', { OrganizationID: orgId, ModelID: modelId }, 'OrganizationModels');
+      }
+    },
+    brandModels(brandId) {
+      return (this.db.globalmodels || []).filter(m => String(m.BrandID) === String(brandId));
+    }
+  }
 }
 </script>
+
+<style scoped>
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+</style>

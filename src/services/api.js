@@ -35,6 +35,8 @@ const FIELD_MAPS = {
   services: {
     id: "ID", name: "Name", price: "Price",
     organization_id: "OrganizationID",
+    category_id: "CategoryID", global_service_id: "GlobalServiceID",
+    is_custom: "IsCustom",
   },
   brands: {
     id: "ID", name: "Name",
@@ -51,6 +53,18 @@ const FIELD_MAPS = {
   },
   organizations: {
     id: "ID", name: "Name",
+  },
+  service_categories: {
+    id: "ID", name: "Name",
+  },
+  global_services: {
+    id: "ID", category_id: "CategoryID", name: "Name", default_price: "DefaultPrice",
+  },
+  organization_brands: {
+    organization_id: "OrganizationID", brand_id: "BrandID",
+  },
+  organization_models: {
+    organization_id: "OrganizationID", model_id: "ModelID",
   },
 };
 
@@ -73,6 +87,10 @@ const TABLE_MAP = {
   WelcomeScreens: "welcome_screens",
   GameRecords: "game_records",
   Organizations: "organizations",
+  ServiceCategories: "service_categories",
+  GlobalServices: "global_services",
+  OrganizationBrands: "organization_brands",
+  OrganizationModels: "organization_models",
 };
 
 // Store key → DB table name
@@ -85,6 +103,10 @@ const STORE_KEY_MAP = {
   welcomescreens: "welcome_screens",
   gamerecords: "game_records",
   organizations: "organizations",
+  servicecategories: "service_categories",
+  globalservices: "global_services",
+  organizationbrands: "organization_brands",
+  organizationmodels: "organization_models",
 };
 
 /**
@@ -327,11 +349,17 @@ export async function getInitData(role, userId, orgId) {
   const welcomescreensQuery = supabase.from("welcome_screens").select("*");
   const gamerecordsQuery = supabase.from("game_records").select("*");
   const orgsQuery = supabase.from("organizations").select("*").order("name", { ascending: true });
+  const serviceCategoriesQuery = supabase.from("service_categories").select("*").order("name", { ascending: true });
+  const globalServicesQuery = supabase.from("global_services").select("*").order("name", { ascending: true });
+  const orgBrandsQuery = supabase.from("organization_brands").select("*");
+  const orgModelsQuery = supabase.from("organization_models").select("*");
 
   if (!isSuper && orgId) {
     recordsQuery.eq("organization_id", orgId);
     servicesQuery.eq("organization_id", orgId);
     usersQuery.eq("organization_id", orgId);
+    orgBrandsQuery.eq("organization_id", orgId);
+    orgModelsQuery.eq("organization_id", orgId);
   }
 
   const [
@@ -343,6 +371,10 @@ export async function getInitData(role, userId, orgId) {
     { data: welcomescreens, error: errWS },
     { data: gamerecords, error: errGR },
     { data: orgs, error: errOrgs },
+    { data: serviceCategories, error: errSC },
+    { data: globalServices, error: errGS },
+    { data: orgBrands, error: errOB },
+    { data: orgModels, error: errOM },
   ] = await Promise.all([
     recordsQuery,
     servicesQuery,
@@ -352,6 +384,10 @@ export async function getInitData(role, userId, orgId) {
     welcomescreensQuery,
     gamerecordsQuery,
     orgsQuery,
+    serviceCategoriesQuery,
+    globalServicesQuery,
+    orgBrandsQuery,
+    orgModelsQuery,
   ]);
 
   if (errRecords) handleError(errRecords);
@@ -362,16 +398,40 @@ export async function getInitData(role, userId, orgId) {
   if (errWS) handleError(errWS);
   if (errGR) handleError(errGR);
   if (errOrgs) handleError(errOrgs);
+  if (errSC) handleError(errSC);
+  if (errGS) handleError(errGS);
+  if (errOB) handleError(errOB);
+  if (errOM) handleError(errOM);
+
+  const mappedBrands = (brands || []).map((b) => toApp("brands", b));
+  const mappedModels = (models || []).map((m) => toApp("models", m));
+
+  let finalBrands = mappedBrands;
+  let finalModels = mappedModels;
+
+  if (!isSuper && orgId) {
+    const activeBrandIds = (orgBrands || []).map((ob) => ob.brand_id);
+    const activeModelIds = (orgModels || []).map((om) => om.model_id);
+
+    finalBrands = mappedBrands.filter((b) => activeBrandIds.includes(b.ID));
+    finalModels = mappedModels.filter((m) => activeModelIds.includes(m.ID));
+  }
 
   return {
     records: (records || []).map((r) => toApp("records", r)),
     services: (services || []).map((s) => toApp("services", s)),
     users: (users || []).map((u) => toApp("users", u)),
-    brands: (brands || []).map((b) => toApp("brands", b)),
-    models: (models || []).map((m) => toApp("models", m)),
+    brands: finalBrands,
+    models: finalModels,
+    globalbrands: mappedBrands,
+    globalmodels: mappedModels,
     welcomescreens: (welcomescreens || []).map((w) => toApp("welcome_screens", w)),
     gamerecords: (gamerecords || []).map((g) => toApp("game_records", g)),
     organizations: (orgs || []).map((o) => toApp("organizations", o)),
+    servicecategories: (serviceCategories || []).map((sc) => toApp("service_categories", sc)),
+    globalservices: (globalServices || []).map((gs) => toApp("global_services", gs)),
+    organizationbrands: (orgBrands || []).map((ob) => toApp("organization_brands", ob)),
+    organizationmodels: (orgModels || []).map((om) => toApp("organization_models", om)),
   };
 }
 
@@ -481,7 +541,16 @@ export async function updateRow(sheetName, obj) {
 
 export async function deleteRow(sheetName, id) {
   const table = resolveTable(sheetName);
-  const { error } = await supabase.from(table).delete().eq("id", id);
+  let query = supabase.from(table).delete();
+  if (typeof id === "object" && id !== null) {
+    for (const [key, val] of Object.entries(id)) {
+      const dbKey = REVERSE_MAPS[table] && REVERSE_MAPS[table][key] ? REVERSE_MAPS[table][key] : key;
+      query = query.eq(dbKey, val);
+    }
+  } else {
+    query = query.eq("id", id);
+  }
+  const { error } = await query;
   handleError(error);
   return { id };
 }

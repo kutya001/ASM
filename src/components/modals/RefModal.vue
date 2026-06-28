@@ -31,7 +31,25 @@
               >{{ f.l }}</label
             >
             <select
-              v-if="f.t === 'selectBrand'"
+              v-if="f.t === 'selectCategory'"
+              v-model="refForm[f.k]"
+              class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm outline-none"
+            >
+              <option v-for="cat in dbCategories" :key="cat.ID" :value="cat.ID">
+                {{ cat.Name }}
+              </option>
+            </select>
+            <select
+              v-else-if="f.t === 'selectGlobalBrand'"
+              v-model="refForm[f.k]"
+              class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm outline-none"
+            >
+              <option v-for="b in dbGlobalBrands" :key="b.ID" :value="b.ID">
+                {{ b.Name }}
+              </option>
+            </select>
+            <select
+              v-else-if="f.t === 'selectBrand'"
               v-model="refForm[f.k]"
               class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm"
             >
@@ -91,31 +109,38 @@ import { generateUUID } from "../../utils/helpers";
 export default {
   data() {
     return {
-      activeRefTab: "services",
+      activeRefTab: "categories",
       refForm: {},
       isSaving: false,
       refMeta: {
-        services: {
-          title: "Услуги",
+        categories: {
+          title: "Категория услуг",
+          icon: "folder",
+          sheet: "ServiceCategories",
+          fields: [{ k: "Name", l: "Название категории" }],
+        },
+        globalservices: {
+          title: "Шаблон услуги",
           icon: "build",
-          sheet: "Services",
+          sheet: "GlobalServices",
           fields: [
-            { k: "Name", l: "Название" },
-            { k: "Price", l: "Цена (KGS)", t: "number" },
+            { k: "CategoryID", l: "Категория", t: "selectCategory" },
+            { k: "Name", l: "Название услуги" },
+            { k: "DefaultPrice", l: "Цена шаблона (сом)", t: "number" },
           ],
         },
         brands: {
-          title: "Марки",
+          title: "Марка авто",
           icon: "directions_car",
           sheet: "Brands",
           fields: [{ k: "Name", l: "Марка" }],
         },
         models: {
-          title: "Модели",
+          title: "Модель авто",
           icon: "list_alt",
           sheet: "Models",
           fields: [
-            { k: "BrandID", l: "Привязка (Марка)", t: "selectBrand" },
+            { k: "BrandID", l: "Марка авто", t: "selectGlobalBrand" },
             { k: "Name", l: "Модель" },
           ],
         },
@@ -135,14 +160,16 @@ export default {
     },
     activeFields() {
       if (!this.refMeta[this.activeRefTab]) return [];
-      let fields = [...this.refMeta[this.activeRefTab].fields];
-      if (this.activeRefTab === 'services' && this.user && this.user.Role === 'Superadmin') {
-        fields.push({ k: "OrganizationID", l: "Организация", t: "selectOrg" });
-      }
-      return fields;
+      return [...this.refMeta[this.activeRefTab].fields];
     },
     dbOrganizations() {
       return this.store.db.organizations || [];
+    },
+    dbCategories() {
+      return this.store.db.servicecategories || [];
+    },
+    dbGlobalBrands() {
+      return this.store.db.globalbrands || [];
     },
   },
   mounted() {
@@ -168,8 +195,7 @@ export default {
         this.isSaving = true;
         let sheet = this.refMeta[this.activeRefTab].sheet;
         
-        // Role protection
-        if (this.activeRefTab !== 'services' && this.user.Role !== 'Superadmin') {
+        if (this.user.Role !== 'Superadmin') {
           this.store.showToast("Только Супер-администратор может редактировать этот справочник", "error");
           this.isSaving = false;
           return;
@@ -181,7 +207,6 @@ export default {
         );
         let isNew = !payload.ID;
 
-        // Validation & Uniqueness check
         const nameVal = String(payload.Name || '').trim();
         if (!nameVal) {
           this.store.showToast("Название не может быть пустым", "error");
@@ -190,25 +215,33 @@ export default {
         }
         payload.Name = nameVal;
 
-        if (this.activeRefTab === 'services') {
-          if (this.user.Role === 'Superadmin') {
-            if (!payload.OrganizationID) {
-              this.store.showToast("Выберите организацию для услуги", "error");
-              this.isSaving = false;
-              return;
-            }
-          } else {
-            payload.OrganizationID = this.user.OrganizationID;
-          }
-          const list = this.store.db.services || [];
-          const exists = list.some(x => x.ID !== payload.ID && String(x.Name || '').trim().toLowerCase() === nameVal.toLowerCase() && String(x.OrganizationID) === String(payload.OrganizationID));
+        // Validations
+        if (this.activeRefTab === 'categories') {
+          const list = this.store.db.servicecategories || [];
+          const exists = list.some(x => x.ID !== payload.ID && String(x.Name || '').trim().toLowerCase() === nameVal.toLowerCase());
           if (exists) {
-            this.store.showToast("Такая услуга уже существует в этой организации", "error");
+            this.store.showToast("Такая категория уже существует", "error");
+            this.isSaving = false;
+            return;
+          }
+        } else if (this.activeRefTab === 'globalservices') {
+          if (!payload.CategoryID) {
+            this.store.showToast("Выберите категорию для шаблона", "error");
+            this.isSaving = false;
+            return;
+          }
+          if (payload.DefaultPrice === undefined || payload.DefaultPrice === '') {
+            payload.DefaultPrice = 0;
+          }
+          const list = this.store.db.globalservices || [];
+          const exists = list.some(x => x.ID !== payload.ID && String(x.CategoryID) === String(payload.CategoryID) && String(x.Name || '').trim().toLowerCase() === nameVal.toLowerCase());
+          if (exists) {
+            this.store.showToast("Услуга с таким названием уже есть в этой категории", "error");
             this.isSaving = false;
             return;
           }
         } else if (this.activeRefTab === 'brands') {
-          const list = this.store.db.brands || [];
+          const list = this.store.db.globalbrands || [];
           const exists = list.some(x => x.ID !== payload.ID && String(x.Name || '').trim().toLowerCase() === nameVal.toLowerCase());
           if (exists) {
             this.store.showToast("Такая марка уже существует", "error");
@@ -221,30 +254,35 @@ export default {
             this.isSaving = false;
             return;
           }
-          const list = this.store.db.models || [];
+          const list = this.store.db.globalmodels || [];
           const exists = list.some(x => x.ID !== payload.ID && String(x.BrandID) === String(payload.BrandID) && String(x.Name || '').trim().toLowerCase() === nameVal.toLowerCase());
           if (exists) {
-            this.store.showToast("Такая модель уже существует для выбранной марки", "error");
+            this.store.showToast("Такая модель уже существует для этой марки", "error");
             this.isSaving = false;
             return;
           }
         }
 
+        const stateKey = this.activeRefTab === 'categories' ? 'servicecategories' 
+                       : this.activeRefTab === 'globalservices' ? 'globalservices'
+                       : this.activeRefTab === 'brands' ? 'globalbrands'
+                       : 'globalmodels';
+
         if (isNew) {
           payload.ID = generateUUID();
           this.store.dispatchSync("addRow", payload, sheet);
         } else {
-          let idx = this.store.db[this.activeRefTab].findIndex(
+          let idx = this.store.db[stateKey].findIndex(
             (x) => x.ID === payload.ID,
           );
-          if (idx > -1) this.store.db[this.activeRefTab][idx] = payload;
+          if (idx > -1) this.store.db[stateKey][idx] = payload;
           this.store.dispatchSync("updateRow", payload, sheet);
         }
 
         this.store.showToast(
           payload.ID && !isNew
-            ? "Обновлено в справочнике"
-            : "Добавлено в справочник",
+            ? "Шаблон обновлен"
+            : "Шаблон добавлен",
         );
         this.hide();
       } catch (e) {
