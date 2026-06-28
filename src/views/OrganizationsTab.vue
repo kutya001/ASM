@@ -240,15 +240,15 @@ export default {
     activeOrgsCount() {
       if (!this.db.organizations) return 0;
       return this.db.organizations.filter(o => {
-        if (!o.SubscriptionEndsAt) return false;
-        return new Date(o.SubscriptionEndsAt) > new Date();
+        const d = this.parseDateSafely(o.SubscriptionEndsAt);
+        return d ? d > new Date() : false;
       }).length;
     },
     expiredOrgsCount() {
       if (!this.db.organizations) return 0;
       return this.db.organizations.filter(o => {
-        if (!o.SubscriptionEndsAt) return true;
-        return new Date(o.SubscriptionEndsAt) <= new Date();
+        const d = this.parseDateSafely(o.SubscriptionEndsAt);
+        return d ? d <= new Date() : true;
       }).length;
     }
   },
@@ -258,6 +258,14 @@ export default {
     }
   },
   methods: {
+    parseDateSafely(dateStr) {
+      if (!dateStr) return null;
+      if (dateStr instanceof Date) return dateStr;
+      // Replace space with T for ISO-8601 compatibility
+      const cleanStr = String(dateStr).replace(" ", "T");
+      const d = new Date(cleanStr);
+      return isNaN(d.getTime()) ? null : d;
+    },
     getOrgUsersCount(orgId) {
       if (!this.db.users) return 0;
       return this.db.users.filter(u => u.OrganizationID === orgId).length;
@@ -273,12 +281,12 @@ export default {
         .reduce((acc, r) => acc + (Number(r.TotalAmount) || 0), 0);
     },
     isOrgSubActive(org) {
-      if (!org.SubscriptionEndsAt) return false;
-      return new Date(org.SubscriptionEndsAt) > new Date();
+      const d = this.parseDateSafely(org.SubscriptionEndsAt);
+      return d ? d > new Date() : false;
     },
     formatSubDate(dateStr) {
-      if (!dateStr) return "—";
-      const d = new Date(dateStr);
+      const d = this.parseDateSafely(dateStr);
+      if (!d) return "—";
       const dd = String(d.getDate()).padStart(2, "0");
       const mm = String(d.getMonth() + 1).padStart(2, "0");
       const yyyy = d.getFullYear();
@@ -287,13 +295,14 @@ export default {
     openOrgModal(org = null) {
       if (org) {
         let dateStr = "";
-        if (org.SubscriptionEndsAt) {
-          dateStr = new Date(org.SubscriptionEndsAt).toISOString().split('T')[0];
+        const d = this.parseDateSafely(org.SubscriptionEndsAt);
+        if (d) {
+          dateStr = d.toISOString().split('T')[0];
         } else {
           // Default to exactly 1 month from now
-          const d = new Date();
-          d.setMonth(d.getMonth() + 1);
-          dateStr = d.toISOString().split('T')[0];
+          const fallback = new Date();
+          fallback.setMonth(fallback.getMonth() + 1);
+          dateStr = fallback.toISOString().split('T')[0];
         }
         this.orgForm = {
           ID: org.ID,
@@ -317,9 +326,10 @@ export default {
     extendSubByMonth() {
       let baseDate = new Date();
       if (this.orgForm.SubscriptionEndsAt) {
+        // Since orgForm.SubscriptionEndsAt is formatted as YYYY-MM-DD input, parsing is clean
         const currentEnds = new Date(this.orgForm.SubscriptionEndsAt);
         // If current subscription date is in the future, extend from that date
-        if (currentEnds > new Date()) {
+        if (!isNaN(currentEnds.getTime()) && currentEnds > new Date()) {
           baseDate = currentEnds;
         }
       }

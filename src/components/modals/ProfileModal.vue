@@ -302,18 +302,22 @@ export default {
       if (!this.user) return false;
       const org = (this.store.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
       if (!org || !org.SubscriptionEndsAt) return false;
-      return new Date(org.SubscriptionEndsAt) > new Date();
+      const cleanStr = String(org.SubscriptionEndsAt).replace(" ", "T");
+      const d = new Date(cleanStr);
+      return isNaN(d.getTime()) ? false : d > new Date();
     },
     subEndsDateText() {
       if (!this.user) return "";
       const org = (this.store.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
       if (!org || !org.SubscriptionEndsAt) return "Не оплачена";
-      const d = new Date(org.SubscriptionEndsAt);
+      const cleanStr = String(org.SubscriptionEndsAt).replace(" ", "T");
+      const d = new Date(cleanStr);
+      if (isNaN(d.getTime())) return "Не оплачена";
       const dd = String(d.getDate()).padStart(2, "0");
       const mm = String(d.getMonth() + 1).padStart(2, "0");
       const yyyy = d.getFullYear();
       const formatted = `${dd}.${mm}.${yyyy}`;
-      return new Date(org.SubscriptionEndsAt) > new Date()
+      return d > new Date()
         ? `Действует до ${formatted}`
         : `Истекла ${formatted}`;
     },

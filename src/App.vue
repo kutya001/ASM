@@ -326,7 +326,9 @@ export default {
       const org = (this.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
       if (!org) return false;
       if (!org.SubscriptionEndsAt) return true;
-      return new Date(org.SubscriptionEndsAt) < new Date();
+      const cleanStr = String(org.SubscriptionEndsAt).replace(" ", "T");
+      const d = new Date(cleanStr);
+      return isNaN(d.getTime()) ? true : d < new Date();
     },
     userOrganizationName() {
       if (!this.user) return '';
