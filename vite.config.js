@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  base: '/ASM/',
+  base: process.env.VERCEL ? '/' : '/ASM/',
   plugins: [
     vue(),
     tailwindcss()
