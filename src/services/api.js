@@ -6,11 +6,11 @@ import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL ||
-  "https://crxmpzvxvormtebimbbm.supabase.co";
+  "https://cddeypycepqycsvlqunp.supabase.co";
 
 const SUPABASE_ANON_KEY =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyeG1wenZ4dm9ybXRlYmltYmJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDk0MjMsImV4cCI6MjA5NjU4NTQyM30.CkB4j4dz4lRRtCEx4NxfitOz4WgtNHu6heoriDCJXBE";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkZGV5cHljZXBxeWNzdmxxdW5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2MTg0MDUsImV4cCI6MjA5ODE5NDQwNX0.rzdZzmIc_IvY5pys5Dr2u2fEQzYUupOMC2whVZTUh84";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
