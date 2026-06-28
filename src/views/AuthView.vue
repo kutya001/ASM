@@ -691,9 +691,15 @@ export default {
     },
   },
   mounted() {
+    document.body.style.overflow = "auto";
+    document.body.style.height = "auto";
     if (this.authMode === "register") {
       this.fetchOrganizations();
     }
+  },
+  beforeUnmount() {
+    document.body.style.overflow = "hidden";
+    document.body.style.height = "100vh";
   },
   methods: {
     async fetchOrganizations() {
