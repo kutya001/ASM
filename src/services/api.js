@@ -544,6 +544,9 @@ export async function deleteRow(sheetName, id) {
   let query = supabase.from(table).delete();
   if (typeof id === "object" && id !== null) {
     for (const [key, val] of Object.entries(id)) {
+      if ((key === "ID" || key === "id") && (table === "organization_brands" || table === "organization_models")) {
+        continue;
+      }
       const dbKey = REVERSE_MAPS[table] && REVERSE_MAPS[table][key] ? REVERSE_MAPS[table][key] : key;
       query = query.eq(dbKey, val);
     }

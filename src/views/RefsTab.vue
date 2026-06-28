@@ -160,60 +160,66 @@
       <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
         <button
           @click="activeOrgTab = 'services'"
-          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer"
+          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer flex items-center justify-center gap-1.5"
           :class="activeOrgTab === 'services' ? 'bg-white text-indigo-600 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'"
         >
-          Услуги (Прайс-лист)
+          <span class="material-symbols-outlined text-[15px]">build</span>
+          Услуги
         </button>
         <button
           @click="activeOrgTab = 'cars'"
-          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer"
+          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer flex items-center justify-center gap-1.5"
           :class="activeOrgTab === 'cars' ? 'bg-white text-indigo-600 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'"
         >
-          Обслуживаемые автомобили
+          <span class="material-symbols-outlined text-[15px]">directions_car</span>
+          Автомобили
         </button>
       </div>
 
       <!-- Services List & Import for Tenant -->
       <div v-if="activeOrgTab === 'services'" class="space-y-4">
+        <!-- Control bar with icons -->
         <div class="flex justify-between items-center px-1">
           <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Прайс-лист нашего СТО</div>
           
-          <div class="flex gap-2 items-center">
-            <button @click="expandAllCategories" class="h-6 px-2 bg-indigo-50 text-indigo-600 text-[9px] font-bold rounded-lg border-none hover:bg-indigo-100 transition cursor-pointer">
-              Развернуть всё
+          <div class="flex gap-1.5 items-center">
+            <!-- Icon for Expand All -->
+            <button @click="expandAllCategories" title="Развернуть все категории" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-650 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[18px]">unfold_more</span>
             </button>
-            <button @click="collapseAllCategories" class="h-6 px-2 bg-slate-100 text-slate-600 text-[9px] font-bold rounded-lg border-none hover:bg-slate-200 transition cursor-pointer">
-              Свернуть всё
+            <!-- Icon for Collapse All -->
+            <button @click="collapseAllCategories" title="Свернуть все" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[18px]">unfold_less</span>
             </button>
           </div>
         </div>
 
-        <!-- Grouped services list with Accordion -->
+        <!-- Grouped services list with Accordion (Identical styling to brand tree) -->
         <div class="space-y-3">
           <div
             v-for="group in tenantGroupedServices"
             :key="group.category.ID"
-            class="border border-slate-200/50 rounded-2xl bg-slate-50/50 overflow-hidden shadow-sm transition-all"
+            class="border border-slate-200/50 rounded-2xl bg-white overflow-hidden shadow-sm transition-all"
           >
             <!-- Category header (clickable) -->
             <div
               @click="toggleCategoryExpanded(group.category.ID)"
-              class="bg-slate-100/70 px-4 py-2.5 flex justify-between items-center border-b border-slate-200/50 cursor-pointer hover:bg-slate-100 transition"
+              class="px-4 py-3 flex justify-between items-center hover:bg-slate-50/50 transition cursor-pointer"
             >
-              <span class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                <span class="material-symbols-outlined text-[16px] text-indigo-500 transition-transform" :class="isCategoryExpanded(group.category.ID) ? 'rotate-90' : ''">
+              <span class="text-xs font-black text-slate-850 uppercase tracking-wider flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-slate-450 transition-transform" :class="isCategoryExpanded(group.category.ID) ? 'rotate-90' : ''">
                   chevron_right
                 </span>
                 {{ group.category.Name }}
               </span>
-              <span class="text-[9px] text-indigo-600 font-bold uppercase bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-150/30">
+              
+              <span class="text-[9px] font-black uppercase bg-indigo-50 text-indigo-650 px-2 py-0.5 rounded-full border border-indigo-150/30">
                 {{ group.services.length }} усл.
               </span>
             </div>
             
             <!-- Category Services list -->
-            <div v-if="isCategoryExpanded(group.category.ID)" class="divide-y divide-slate-100 bg-white animate-fade-in">
+            <div v-if="isCategoryExpanded(group.category.ID)" class="divide-y divide-slate-100 bg-slate-50/30 border-t border-slate-100 animate-fade-in">
               <div
                 v-for="s in group.services"
                 :key="s.ID"
@@ -248,47 +254,36 @@
 
       <!-- Cars Configuration for Tenant (Accordion List) -->
       <div v-if="activeOrgTab === 'cars'" class="space-y-4">
-        <!-- Controls bar -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
-          <div class="flex flex-col sm:flex-row justify-between gap-3">
-            <div class="flex flex-wrap gap-2 items-center">
-              <button @click="expandAllBrands" class="h-8 px-3 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-xl border-none hover:bg-indigo-100 transition cursor-pointer">
-                Развернуть все марки
-              </button>
-              <button @click="collapseAllBrands" class="h-8 px-3 bg-slate-100 text-slate-650 text-xs font-bold rounded-xl border-none hover:bg-slate-200 transition cursor-pointer">
-                Свернуть все
-              </button>
-              <button @click="selectAllBrands" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-xl border-none hover:bg-indigo-700 transition cursor-pointer">
-                Выбрать все авто
-              </button>
-              <button @click="clearAllBrands" class="h-8 px-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border-none hover:bg-red-100 transition cursor-pointer">
-                Сбросить всё
-              </button>
-            </div>
-            <div class="flex items-center gap-3">
-              <!-- Filter Active Cars Only -->
-              <label class="flex items-center gap-2 cursor-pointer text-xs font-black text-slate-500 uppercase tracking-wider">
-                <input
-                  type="checkbox"
-                  v-model="onlyOurCars"
-                  class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                />
-                Только наши авто
-              </label>
-            </div>
+        <!-- Controls bar with icons -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div class="flex items-center gap-2">
+            <!-- Icon Expand All -->
+            <button @click="expandAllBrands" title="Развернуть все марки" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-650 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[18px]">unfold_more</span>
+            </button>
+            <!-- Icon Collapse All -->
+            <button @click="collapseAllBrands" title="Свернуть все" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[18px]">unfold_less</span>
+            </button>
+            <!-- Icon Select All -->
+            <button @click="selectAllBrands" title="Выбрать все автомобили" class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-650 border-none flex items-center justify-center cursor-pointer hover:bg-indigo-100 transition">
+              <span class="material-symbols-outlined text-[18px]">done_all</span>
+            </button>
+            <!-- Icon Reset All -->
+            <button @click="clearAllBrands" title="Сбросить всё" class="w-8 h-8 rounded-xl bg-red-50 text-red-650 border-none flex items-center justify-center cursor-pointer hover:bg-red-105 transition">
+              <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+            </button>
           </div>
-
-          <!-- Search filter for car models/brands -->
-          <div class="relative w-full">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-              <span class="material-symbols-outlined text-[18px]">search</span>
-            </span>
-            <input
-              type="text"
-              v-model="carSearchQuery"
-              class="w-full h-10 pl-9 pr-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500"
-              placeholder="Поиск по маркам и моделям..."
-            />
+          
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 cursor-pointer text-xs font-black text-slate-500 uppercase tracking-wider">
+              <input
+                type="checkbox"
+                v-model="onlyOurCars"
+                class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+              />
+              Только наши авто
+            </label>
           </div>
         </div>
 
@@ -297,20 +292,20 @@
           <div
             v-for="b in filteredGlobalBrands"
             :key="b.ID"
-            class="border border-slate-200/60 bg-white rounded-2xl overflow-hidden shadow-sm transition"
+            class="border border-slate-200/50 bg-white rounded-2xl overflow-hidden shadow-sm transition"
           >
-            <!-- Brand header -->
+            <!-- Brand header (Identical styling to price list category) -->
             <div
               class="px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition cursor-pointer"
               @click="toggleBrandExpanded(b.ID)"
             >
               <div class="flex items-center gap-3.5" @click.stop>
                 <!-- Toggle arrow -->
-                <span class="material-symbols-outlined text-[18px] text-slate-400 transition-transform cursor-pointer" @click="toggleBrandExpanded(b.ID)">
-                  {{ isBrandExpanded(b.ID) ? 'expand_more' : 'chevron_right' }}
+                <span class="material-symbols-outlined text-[18px] text-slate-450 transition-transform cursor-pointer" :class="isBrandExpanded(b.ID) ? 'rotate-90' : ''" @click="toggleBrandExpanded(b.ID)">
+                  chevron_right
                 </span>
                 
-                <!-- Brand Checkbox -->
+                <!-- Brand Checkbox (controls brand & all models) -->
                 <input
                   type="checkbox"
                   :checked="isOrgBrandActive(b.ID)"
@@ -318,28 +313,18 @@
                   class="w-4 h-4 rounded text-indigo-600 border-slate-350 focus:ring-indigo-500 cursor-pointer"
                 />
                 
-                <span class="text-xs font-black text-slate-850 uppercase tracking-wider">{{ b.Name }}</span>
+                <span class="text-xs font-black text-slate-855 uppercase tracking-wider">{{ b.Name }}</span>
               </div>
               
               <div class="flex items-center gap-3">
                 <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full" :class="isOrgBrandActive(b.ID) ? 'bg-indigo-50 text-indigo-600 border border-indigo-150/30' : 'bg-slate-100 text-slate-400'">
-                  Выбрано моделей: {{ countActiveBrandModels(b.ID) }} / {{ brandModels(b.ID).length }}
+                  {{ countActiveBrandModels(b.ID) }} / {{ brandModels(b.ID).length }}
                 </span>
               </div>
             </div>
 
             <!-- Models list container (renders if expanded) -->
-            <div v-if="isBrandExpanded(b.ID)" class="px-5 py-3.5 bg-slate-50/60 border-t border-slate-100 animate-fade-in">
-              <!-- Select/deselect all for this brand -->
-              <div class="flex gap-2.5 mb-3">
-                <button @click="selectAllBrandModels(b.ID)" class="h-6 px-2.5 bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase rounded-lg border-none hover:bg-indigo-100 transition cursor-pointer">
-                  Выбрать все модели марки
-                </button>
-                <button @click="clearAllBrandModels(b.ID)" class="h-6 px-2.5 bg-red-50 text-red-650 text-[9px] font-black uppercase rounded-lg border-none hover:bg-red-100 transition cursor-pointer">
-                  Снять все модели
-                </button>
-              </div>
-
+            <div v-if="isBrandExpanded(b.ID)" class="px-4 py-3.5 bg-slate-50/30 border-t border-slate-100 animate-fade-in">
               <!-- Models grid -->
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 <div
@@ -386,8 +371,9 @@
         <!-- Action bar to import all services -->
         <div class="px-6 py-2.5 bg-indigo-50 border-b border-indigo-100/50 flex justify-between items-center">
           <span class="text-[10px] text-indigo-700 font-black uppercase tracking-wider">Быстрый импорт</span>
-          <button @click="importAllAvailableServices" class="h-7 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg border-none cursor-pointer transition flex items-center gap-1 shadow-md shadow-indigo-150">
-            <span class="material-symbols-outlined text-[12px]">done_all</span> Импортировать все доступные услуги
+          <!-- Batch Import Icon Button -->
+          <button @click="importAllAvailableServices" title="Импортировать все доступные шаблоны" class="h-8 px-3 bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-xs rounded-xl border-none cursor-pointer transition flex items-center gap-1.5 shadow-md shadow-indigo-150">
+            <span class="material-symbols-outlined text-[16px]">done_all</span> Импортировать все
           </button>
         </div>
         
@@ -396,12 +382,14 @@
           <div v-for="cat in db.servicecategories" :key="cat.ID" class="space-y-2">
             <div class="flex justify-between items-center pb-1">
               <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0">{{ cat.Name }}</h4>
+              <!-- Batch Import Category Icon Button -->
               <button
                 v-if="unimportedGlobalServices(cat.ID).length > 0"
                 @click="importAllCategoryServices(cat.ID)"
-                class="text-[9px] text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-none px-2 py-0.5 rounded font-black uppercase tracking-wider cursor-pointer"
+                title="Добавить все шаблоны в этой категории"
+                class="text-[9px] text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-none px-2.5 py-1 rounded-lg font-black uppercase tracking-wider cursor-pointer flex items-center gap-1"
               >
-                Добавить всю категорию
+                <span class="material-symbols-outlined text-[12px]">done_all</span> Всю категорию
               </button>
             </div>
             <div class="space-y-1.5">
@@ -544,6 +532,10 @@ export default {
     db: {
       type: Object,
       required: true
+    },
+    searchQuery: {
+      type: String,
+      default: ''
     }
   },
   computed: {
@@ -561,7 +553,13 @@ export default {
     },
     tenantGroupedServices() {
       const categories = this.db.servicecategories || [];
-      const services = this.db.services || [];
+      let services = this.db.services || [];
+      
+      // Filter services by global search query
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase().trim();
+        services = services.filter(s => String(s.Name || "").toLowerCase().includes(q));
+      }
       
       return categories.map(cat => {
         return {
@@ -581,9 +579,9 @@ export default {
         list = list.filter(b => activeBrandIds.includes(b.ID));
       }
       
-      // Filter by search query
-      if (this.carSearchQuery) {
-        const q = this.carSearchQuery.toLowerCase().trim();
+      // Filter by global search query
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase().trim();
         list = list.filter(b => {
           const brandMatch = String(b.Name || "").toLowerCase().includes(q);
           const modelsMatch = this.brandModels(b.ID).some(m => String(m.Name || "").toLowerCase().includes(q));
@@ -619,8 +617,7 @@ export default {
       // Accordion states
       expandedCategories: [],
       expandedBrands: [],
-      onlyOurCars: false,
-      carSearchQuery: ''
+      onlyOurCars: false
     };
   },
   watch: {
@@ -633,8 +630,8 @@ export default {
         });
       }
     },
-    // Auto-expand brands matching search query
-    carSearchQuery(newQuery) {
+    // Auto-expand brands matching global search query
+    searchQuery(newQuery) {
       if (newQuery) {
         const q = newQuery.toLowerCase().trim();
         const matchingBrandIds = (this.db.globalbrands || [])
@@ -650,12 +647,25 @@ export default {
             this.expandedBrands.push(id);
           }
         });
+        
+        // Also expand matching categories
+        const matchingCatIds = (this.db.servicecategories || [])
+          .filter(cat => {
+            const services = (this.db.services || []).filter(s => s.CategoryID === cat.ID);
+            return services.some(s => String(s.Name || "").toLowerCase().includes(q));
+          })
+          .map(c => c.ID);
+        
+        matchingCatIds.forEach(id => {
+          if (!this.expandedCategories.includes(id)) {
+            this.expandedCategories.push(id);
+          }
+        });
       }
     },
     db: {
       immediate: true,
       handler(newDb) {
-        // Expand all categories by default when db loads
         if (newDb && newDb.servicecategories && this.expandedCategories.length === 0) {
           this.expandedCategories = newDb.servicecategories.map(c => c.ID);
         }
@@ -857,10 +867,8 @@ export default {
       const active = this.isOrgBrandActive(brandId);
       
       if (active) {
-        // Remove brand
         this.store.dispatchSync('deleteRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
         
-        // Remove all models of this brand
         const modelsOfBrand = this.brandModels(brandId);
         modelsOfBrand.forEach(m => {
           if (this.isOrgModelActive(m.ID)) {
@@ -869,10 +877,8 @@ export default {
         });
         this.store.showToast('Марка и связанные модели отключены');
       } else {
-        // Add brand
         this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
         
-        // Add all models of this brand automatically
         const modelsOfBrand = this.brandModels(brandId);
         const newModelObjs = modelsOfBrand.map(m => ({
           OrganizationID: orgId,
@@ -888,7 +894,6 @@ export default {
       const orgId = this.store.user.OrganizationID;
       const active = this.isOrgModelActive(modelId);
       
-      // Find what brand this model belongs to
       const modelObj = (this.db.globalmodels || []).find(m => m.ID === modelId);
       if (!modelObj) return;
       const brandId = modelObj.BrandID;
@@ -896,7 +901,6 @@ export default {
       if (active) {
         this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: modelId }, 'OrganizationModels');
       } else {
-        // If brand is not active yet, activate it automatically!
         if (!this.isOrgBrandActive(brandId)) {
           this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
         }
@@ -908,8 +912,8 @@ export default {
     },
     filteredBrandModels(brandId) {
       const list = this.brandModels(brandId);
-      if (this.carSearchQuery) {
-        const q = this.carSearchQuery.toLowerCase().trim();
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase().trim();
         return list.filter(m => String(m.Name || "").toLowerCase().includes(q));
       }
       return list;
@@ -919,14 +923,12 @@ export default {
       const unselectedBrands = (this.db.globalbrands || []).filter(b => !this.isOrgBrandActive(b.ID));
       if (unselectedBrands.length === 0) return this.store.showToast('Все марки уже выбраны');
 
-      // Select all brands
       const brandObjs = unselectedBrands.map(b => ({
         OrganizationID: orgId,
         BrandID: b.ID
       }));
       this.store.dispatchSync('addRows', brandObjs, 'OrganizationBrands');
 
-      // Select all models
       const modelObjs = [];
       (this.db.globalbrands || []).forEach(b => {
         const modelsOfBrand = this.brandModels(b.ID);
@@ -960,7 +962,6 @@ export default {
       const unselected = models.filter(m => !this.isOrgModelActive(m.ID));
       if (unselected.length === 0) return this.store.showToast('Все модели этой марки уже выбраны');
 
-      // Ensure brand is active
       if (!this.isOrgBrandActive(brandId)) {
         this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
       }
