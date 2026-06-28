@@ -10,18 +10,40 @@
       <div
         class="modal-content rounded-3xl border-0 shadow-2xl font-sans overflow-hidden"
       >
-        <div class="modal-header border-b border-slate-100 px-6 py-5 bg-white">
-          <h5 class="modal-title font-bold text-slate-800 m-0">Мой профиль</h5>
-          <button
-            type="button"
-            class="btn-close text-slate-400 focus:ring-0 shrink-0 border-none bg-transparent"
-            data-bs-dismiss="modal"
-          ></button>
+        <div class="modal-header border-b border-slate-100 px-6 py-4 bg-white flex flex-col items-stretch gap-3">
+          <div class="flex justify-between items-center">
+            <h5 class="modal-title font-bold text-slate-800 m-0">Профиль и настройки</h5>
+            <button
+              type="button"
+              class="btn-close text-slate-400 focus:ring-0 shrink-0 border-none bg-transparent"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          
+          <!-- Tab switch buttons (Only for non-Superadmins) -->
+          <div v-if="user && user.Role !== 'Superadmin'" class="flex gap-1 p-0.5 bg-slate-100 rounded-xl">
+            <button
+              type="button"
+              @click="activeProfileTab = 'personal'"
+              class="flex-1 py-1.5 rounded-[8px] text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border-0"
+              :class="activeProfileTab === 'personal' ? 'bg-white text-indigo-655 shadow-xs font-bold' : 'bg-transparent text-slate-500 hover:text-slate-700 font-semibold'"
+            >
+              Личные данные
+            </button>
+            <button
+              type="button"
+              @click="activeProfileTab = 'organization'"
+              class="flex-1 py-1.5 rounded-[8px] text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border-0"
+              :class="activeProfileTab === 'organization' ? 'bg-white text-indigo-655 shadow-xs font-bold' : 'bg-transparent text-slate-500 hover:text-slate-700 font-semibold'"
+            >
+              Организация
+            </button>
+          </div>
         </div>
         <div class="modal-body bg-slate-50 p-6 space-y-4">
-          <!-- View mode -->
+          <!-- Personal Info View Mode -->
           <div
-            v-if="!isEditingProfile"
+            v-if="(user.Role === 'Superadmin' || activeProfileTab === 'personal') && !isEditingProfile"
             class="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm relative animate-fade-in"
           >
             <button
@@ -194,6 +216,54 @@
               ><span>Сохранить настройки</span>
             </button>
           </div>
+
+          <!-- Organization Tab Content -->
+          <div v-if="user && user.Role !== 'Superadmin' && activeProfileTab === 'organization'" class="space-y-4 animate-fade-in text-left">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+              <!-- Org Name -->
+              <div>
+                <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest">Автосервис / СТО</span>
+                <span class="block font-black text-sm text-slate-800 mt-1">{{ userOrgName }}</span>
+              </div>
+              
+              <!-- Subscription Status -->
+              <div class="pt-3 border-t border-slate-100">
+                <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest">Статус подписки</span>
+                
+                <div class="mt-2 p-3.5 rounded-xl border flex items-center justify-between gap-3 animate-fade-in"
+                     :class="isSubActive ? 'bg-emerald-50/50 border-emerald-100 text-emerald-800' : 'bg-rose-50/50 border-rose-100 text-rose-800'">
+                  <div>
+                    <div class="text-[10px] font-black uppercase">
+                      {{ isSubActive ? 'Активна' : 'Истекла' }}
+                    </div>
+                    <div class="text-[10px] font-bold mt-0.5">
+                      {{ subEndsDateText }}
+                    </div>
+                  </div>
+                  <span class="material-symbols-outlined text-xl">
+                    {{ isSubActive ? 'check_circle' : 'cancel' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Payment instruction -->
+              <div class="p-3 bg-indigo-50/40 border border-indigo-100/50 rounded-xl space-y-1.5 text-xs text-indigo-900 leading-relaxed font-semibold">
+                <div class="text-[9px] font-black uppercase text-indigo-700 tracking-wider">Инструкция по оплате</div>
+                <div>Стоимость подписки: <span class="font-extrabold text-indigo-750">1000 сом / месяц</span>.</div>
+                <div>Оплата производится переводом на кошелек. Нажмите кнопку ниже, чтобы перейти в чат поддержки WhatsApp и прикрепить скриншот чека об оплате. Администратор проверит и продлит вашу подписку.</div>
+              </div>
+
+              <!-- Pay Button -->
+              <a
+                :href="whatsappPayLink"
+                target="_blank"
+                class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 border-none decoration-none text-center text-white"
+              >
+                <span class="material-symbols-outlined text-[16px]">payments</span>
+                Оплатить подписку (WhatsApp)
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -213,6 +283,7 @@ export default {
       profileForm: { username: "", Name: "", Phone: "+996 ", password: "" },
       isSavingProfile: false,
       bsModal: null,
+      activeProfileTab: "personal",
     };
   },
   computed: {
@@ -222,6 +293,35 @@ export default {
     user() {
       return this.store.user;
     },
+    userOrgName() {
+      if (!this.user) return "";
+      const org = (this.store.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      return org ? org.Name : "—";
+    },
+    isSubActive() {
+      if (!this.user) return false;
+      const org = (this.store.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      if (!org || !org.SubscriptionEndsAt) return false;
+      return new Date(org.SubscriptionEndsAt) > new Date();
+    },
+    subEndsDateText() {
+      if (!this.user) return "";
+      const org = (this.store.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      if (!org || !org.SubscriptionEndsAt) return "Не оплачена";
+      const d = new Date(org.SubscriptionEndsAt);
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      const formatted = `${dd}.${mm}.${yyyy}`;
+      return new Date(org.SubscriptionEndsAt) > new Date()
+        ? `Действует до ${formatted}`
+        : `Истекла ${formatted}`;
+    },
+    whatsappPayLink() {
+      const orgName = this.userOrgName || "";
+      const text = encodeURIComponent(`Здравствуйте! Отправляю чек для продления подписки организации ${orgName}.`);
+      return `https://wa.me/996500888268?text=${text}`;
+    }
   },
   mounted() {
     if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
@@ -230,6 +330,7 @@ export default {
   },
   methods: {
     open() {
+      this.activeProfileTab = "personal";
       if (this.user) {
         this.isEditingProfile = false;
         this.profileForm.username = this.user.Username;

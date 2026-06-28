@@ -7,6 +7,7 @@ create extension if not exists "uuid-ossp";
 create table if not exists organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
+  subscription_ends_at timestamptz default (now() + interval '1 month'),
   created_at timestamptz default now()
 );
 

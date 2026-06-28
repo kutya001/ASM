@@ -28,6 +28,58 @@
 
   <AuthView v-if="!user" />
 
+  <!-- Blocking Screen if subscription has expired -->
+  <div
+    v-else-if="isSubscriptionExpired"
+    class="w-full h-screen bg-slate-900 flex items-center justify-center p-4 animate-fade-in"
+  >
+    <div class="bg-white rounded-3xl w-full max-w-md p-8 text-center shadow-2xl border border-slate-100 space-y-6">
+      <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto shadow-inner">
+        <span class="material-symbols-outlined text-3xl font-bold">lock</span>
+      </div>
+      <div>
+        <h3 class="font-heading text-lg font-black text-slate-800 uppercase tracking-wider">Доступ заблокирован</h3>
+        <p class="text-xs font-semibold text-slate-550 mt-2 leading-relaxed">
+          Срок действия вашей подписки истек. Для разблокировки личного кабинета оплатите подписку и отправьте чек.
+        </p>
+      </div>
+      
+      <!-- Subscription status card -->
+      <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center text-left">
+        <div>
+          <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Организация</div>
+          <div class="text-xs font-black text-slate-850">{{ userOrganizationName }}</div>
+        </div>
+        <span class="text-[9px] font-black uppercase bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full border border-rose-150/30">
+          Истекла
+        </span>
+      </div>
+
+      <div class="flex flex-col gap-2 pt-2">
+        <a
+          :href="payWhatsAppLink"
+          target="_blank"
+          class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 border-none decoration-none text-white"
+        >
+          <span class="material-symbols-outlined text-[16px]">payments</span>
+          Оплатить (WhatsApp)
+        </a>
+        <button
+          @click="openProfileModal('organization')"
+          class="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-655 rounded-xl font-bold text-xs tracking-wider uppercase transition border-none cursor-pointer"
+        >
+          Профиль организации
+        </button>
+        <button
+          @click="logout"
+          class="w-full py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold text-xs tracking-wider uppercase transition border-none bg-transparent cursor-pointer"
+        >
+          Выйти из аккаунта
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div
     v-else
     class="flex flex-col md:flex-row h-screen w-full bg-slate-50 text-slate-900 overflow-hidden"
@@ -268,6 +320,24 @@ export default {
     ]),
     isAllStatusesActive() {
       return this.activeStatuses && this.activeStatuses.length === 3;
+    },
+    isSubscriptionExpired() {
+      if (!this.user || this.user.Role === 'Superadmin') return false;
+      const org = (this.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      if (!org) return false;
+      if (!org.SubscriptionEndsAt) return true;
+      return new Date(org.SubscriptionEndsAt) < new Date();
+    },
+    userOrganizationName() {
+      if (!this.user) return '';
+      const org = (this.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      return org ? org.Name : '';
+    },
+    payWhatsAppLink() {
+      if (!this.user) return '';
+      const orgName = this.userOrganizationName || '';
+      const text = encodeURIComponent(`Здравствуйте! Отправляю чек для продления подписки организации ${orgName}.`);
+      return `https://wa.me/996500888268?text=${text}`;
     },
     filteredRecords() {
       let d = [...this.db.records].sort(
@@ -549,9 +619,9 @@ export default {
       }
     },
 
-    openProfileModal() {
+    openProfileModal(tab = "personal") {
       if (this.$refs.profileModal) {
-        this.$refs.profileModal.open();
+        this.$refs.profileModal.open(tab);
       }
     },
     openRecordModal(record = null, application = null) {

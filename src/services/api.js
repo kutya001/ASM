@@ -52,7 +52,7 @@ const FIELD_MAPS = {
     start_time: "StartTime", play_time: "PlayTime", score: "Score",
   },
   organizations: {
-    id: "ID", name: "Name",
+    id: "ID", name: "Name", subscription_ends_at: "SubscriptionEndsAt",
   },
   service_categories: {
     id: "ID", name: "Name",
