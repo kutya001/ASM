@@ -159,7 +159,7 @@ function handleError(error) {
 
 export async function loginUser(username, password) {
   if (!username || !password) throw new Error("Укажите логин и пароль");
-  const email = `${username.trim()}@asm.local`;
+  const email = `${username.trim()}@asm.kg`;
   
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
     email,
@@ -236,7 +236,7 @@ export async function registerUserWithOrg(username, password, orgMode, orgValue)
   }
 
   const role = orgMode === "create" ? "SenMaster" : "Master";
-  const email = `${username.trim()}@asm.local`;
+  const email = `${username.trim()}@asm.kg`;
 
   const { error: signUpErr } = await supabase.auth.signUp({
     email,
