@@ -304,11 +304,17 @@ export const useMainStore = defineStore("main", {
       this.isSyncing = true;
       
       // Inject OrganizationID if missing and relevant, and ensure valid UUID
-      if (typeof payload === 'object' && payload !== null) {
-        if (!payload.ID || String(payload.ID).startsWith('local_') || String(payload.ID).startsWith('temp_')) {
-          payload.ID = generateUUID();
+      // Skip ID injection for junction tables (no own ID column) and array payloads
+      const junctionSheets = ['OrganizationBrands', 'OrganizationModels'];
+      const isJunction = sheet && junctionSheets.includes(sheet);
+      
+      if (typeof payload === 'object' && payload !== null && !Array.isArray(payload)) {
+        if (!isJunction && taskName !== 'deleteRow') {
+          if (!payload.ID || String(payload.ID).startsWith('local_') || String(payload.ID).startsWith('temp_')) {
+            payload.ID = generateUUID();
+          }
         }
-        if (this.user) {
+        if (this.user && !isJunction) {
           payload.OrganizationID = payload.OrganizationID || this.user.OrganizationID;
         }
       }
@@ -486,7 +492,13 @@ export const useMainStore = defineStore("main", {
             newData = await deleteRow(task.sheet, task.payload);
             const key = task.sheet.toLowerCase();
             if (this.db[key] && newData) {
-              this.db[key] = this.db[key].filter(r => r.ID !== newData.id);
+              // For junction tables (compound key), optimistic update already removed the row.
+              // For standard tables, filter by ID.
+              if (typeof task.payload === 'object' && task.payload !== null) {
+                // Compound key delete — already removed optimistically, no further action needed
+              } else {
+                this.db[key] = this.db[key].filter(r => r.ID !== newData.id);
+              }
             }
           }
 

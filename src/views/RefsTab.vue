@@ -334,11 +334,11 @@
             <button
               @click="saveCarChanges"
               :disabled="!hasCarChanges"
-              class="h-8 px-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition border-none flex items-center gap-1.5 shadow"
+              title="Сохранить изменения"
+              class="w-8 h-8 rounded-xl transition border-none flex items-center justify-center shadow"
               :class="hasCarChanges ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-indigo-100/50' : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'"
             >
-              <span class="material-symbols-outlined text-[14px]">save</span>
-              Сохранить
+              <span class="material-symbols-outlined text-[16px]">save</span>
             </button>
           </div>
         </div>
@@ -413,63 +413,54 @@
 
     <!-- Template Import Services Modal (Tenant) -->
     <div v-if="showImportServicesModal" class="fixed inset-0 z-50 bg-[#090D1A]/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] animate-fade-in">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] animate-fade-in">
+        <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
-            <h3 class="text-sm font-black text-slate-800 m-0 uppercase tracking-wider">Шаблоны услуг</h3>
-            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Выберите готовые услуги для прайс-листа</div>
+            <h3 class="text-xs font-black text-slate-800 m-0 uppercase tracking-wider">Шаблоны услуг</h3>
+            <div class="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Выберите услуги для прайс-листа</div>
           </div>
           <button @click="showImportServicesModal = false" class="p-1 text-slate-400 hover:text-slate-650 rounded-full border-none bg-transparent cursor-pointer flex items-center">
-            <span class="material-symbols-outlined text-[20px]">close</span>
+            <span class="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         <!-- Action bar to import all services -->
-        <div class="px-6 py-2.5 bg-indigo-50 border-b border-indigo-100/50 flex justify-between items-center">
-          <span class="text-[10px] text-indigo-700 font-black uppercase tracking-wider">Быстрый импорт</span>
-          <!-- Batch Import Icon Button -->
-          <button @click="importAllAvailableServices" title="Импортировать все доступные шаблоны" class="h-8 px-3 bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-xs rounded-xl border-none cursor-pointer transition flex items-center gap-1.5 shadow-md shadow-indigo-150">
-            <span class="material-symbols-outlined text-[16px]">done_all</span> Импортировать все
+        <div class="px-4 py-1.5 bg-indigo-50 border-b border-indigo-100/50 flex justify-between items-center">
+          <span class="text-[9px] text-indigo-700 font-black uppercase tracking-wider">Быстрый импорт</span>
+          <button @click="importAllAvailableServices" title="Импортировать все доступные шаблоны" class="h-7 px-2.5 bg-indigo-600 hover:bg-indigo-750 text-white font-bold text-[10px] rounded-lg border-none cursor-pointer transition flex items-center gap-1 shadow-sm">
+            <span class="material-symbols-outlined text-[14px]">done_all</span> Все
           </button>
         </div>
         
         <!-- List of unimported templates -->
-        <div class="p-6 overflow-y-auto flex-1 space-y-4">
-          <div v-for="cat in db.servicecategories" :key="cat.ID" class="space-y-2">
-            <div class="flex justify-between items-center pb-1">
-              <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0">{{ cat.Name }}</h4>
-              <!-- Batch Import Category Icon Button -->
+        <div class="px-4 py-3 overflow-y-auto flex-1 space-y-3">
+          <div v-for="cat in db.servicecategories" :key="cat.ID" class="space-y-1">
+            <div class="flex justify-between items-center">
+              <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0">{{ cat.Name }}</h4>
               <button
                 v-if="unimportedGlobalServices(cat.ID).length > 0"
                 @click="importAllCategoryServices(cat.ID)"
-                title="Добавить все шаблоны в этой категории"
-                class="text-[9px] text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-none px-2.5 py-1 rounded-lg font-black uppercase tracking-wider cursor-pointer flex items-center gap-1"
+                title="Добавить все в этой категории"
+                class="text-[8px] text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-none px-2 py-0.5 rounded-md font-black uppercase tracking-wider cursor-pointer flex items-center gap-0.5"
               >
-                <span class="material-symbols-outlined text-[12px]">done_all</span> Всю категорию
+                <span class="material-symbols-outlined text-[11px]">done_all</span> Всё
               </button>
             </div>
-            <div class="space-y-1.5">
+            <div class="space-y-1">
               <div
                 v-for="gs in unimportedGlobalServices(cat.ID)"
                 :key="gs.ID"
-                class="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between gap-3"
+                class="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-between gap-2"
               >
-                <div class="text-xs font-bold text-slate-800 max-w-[65%] leading-snug">{{ gs.Name }}</div>
-                <div class="flex items-center gap-2">
-                  <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden h-8 w-24 shadow-sm">
-                    <input
-                      type="number"
-                      v-model.number="templatePrices[gs.ID]"
-                      class="w-full px-2 text-center text-xs font-black text-slate-855 border-none outline-none"
-                      placeholder="Цена"
-                    />
-                  </div>
-                  <button @click="importService(gs)" class="h-8 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg border-none cursor-pointer transition">
-                    Добавить
-                  </button>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[11px] font-bold text-slate-800 leading-snug truncate">{{ gs.Name }}</div>
+                  <div class="text-[9px] font-semibold text-slate-450">{{ Number(gs.DefaultPrice).toLocaleString() }} сом</div>
                 </div>
+                <button @click="importService(gs)" title="Добавить услугу" class="w-7 h-7 shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg border-none cursor-pointer transition flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[16px]">add</span>
+                </button>
               </div>
-              <div v-if="unimportedGlobalServices(cat.ID).length === 0" class="text-[10px] text-slate-400 font-semibold italic pl-1 pb-1">Все шаблоны добавлены</div>
+              <div v-if="unimportedGlobalServices(cat.ID).length === 0" class="text-[9px] text-slate-400 font-semibold italic pl-1">Все добавлены ✓</div>
             </div>
           </div>
         </div>
@@ -936,18 +927,17 @@ export default {
         .filter(gs => gs.CategoryID === catId && !existingGlobalIds.includes(gs.ID));
     },
     importService(gs) {
-      const price = this.templatePrices[gs.ID] !== undefined ? this.templatePrices[gs.ID] : gs.DefaultPrice;
       const payload = {
         ID: generateUUID(),
         Name: gs.Name,
-        Price: price,
+        Price: gs.DefaultPrice || 0,
         CategoryID: gs.CategoryID,
         GlobalServiceID: gs.ID,
         IsCustom: false,
         OrganizationID: this.store.user.OrganizationID
       };
       this.store.dispatchSync('addRow', payload, 'Services');
-      this.store.showToast(`Услуга "${gs.Name}" успешно добавлена`);
+      this.store.showToast(`Услуга "${gs.Name}" добавлена`);
     },
     importAllCategoryServices(catId) {
       const unimported = this.unimportedGlobalServices(catId);
@@ -957,7 +947,7 @@ export default {
       const objects = unimported.map(gs => ({
         ID: generateUUID(),
         Name: gs.Name,
-        Price: this.templatePrices[gs.ID] !== undefined ? this.templatePrices[gs.ID] : gs.DefaultPrice,
+        Price: gs.DefaultPrice || 0,
         CategoryID: gs.CategoryID,
         GlobalServiceID: gs.ID,
         IsCustom: false,
@@ -977,7 +967,7 @@ export default {
           objects.push({
             ID: generateUUID(),
             Name: gs.Name,
-            Price: this.templatePrices[gs.ID] !== undefined ? this.templatePrices[gs.ID] : gs.DefaultPrice,
+            Price: gs.DefaultPrice || 0,
             CategoryID: gs.CategoryID,
             GlobalServiceID: gs.ID,
             IsCustom: false,
