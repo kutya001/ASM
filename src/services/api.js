@@ -137,16 +137,31 @@ function handleError(error) {
 
 export async function loginUser(username, password) {
   if (!username || !password) throw new Error("Укажите логин и пароль");
-  const { data, error } = await supabase
+  const email = `${username.trim()}@asm.local`;
+  
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+  if (authError || !authData.user) {
+    throw new Error("Неверный логин или пароль");
+  }
+  
+  // Fetch user profile from public.users
+  const { data: profile, error: profileError } = await supabase
     .from("users")
     .select("*")
-    .eq("username", username.trim())
-    .eq("password", password)
+    .eq("id", authData.user.id)
     .maybeSingle();
-  if (error || !data) throw new Error("Неверный логин или пароль");
+    
+  if (profileError || !profile) {
+    await supabase.auth.signOut();
+    throw new Error("Профиль пользователя не найден в системе");
+  }
   
-  const user = toApp("users", data);
+  const user = toApp("users", profile);
   if (user.Status !== "Approved" && user.Role !== "Superadmin") {
+    await supabase.auth.signOut();
     throw new Error("Ваша учетная запись ожидает проверки Старшим мастером / Администратором");
   }
   return user;
@@ -199,18 +214,21 @@ export async function registerUserWithOrg(username, password, orgMode, orgValue)
   }
 
   const role = orgMode === "create" ? "SenMaster" : "Master";
-  const status = orgMode === "create" ? "Approved" : "Pending";
+  const email = `${username.trim()}@asm.local`;
 
-  const { error: userErr } = await supabase.from("users").insert({
-    username: username.trim(),
+  const { error: signUpErr } = await supabase.auth.signUp({
+    email,
     password,
-    role,
-    status,
-    organization_id: orgId,
-    name: "",
-    phone: "",
+    options: {
+      data: {
+        role,
+        organization_id: orgId,
+        name: "",
+        phone: "",
+      }
+    }
   });
-  handleError(userErr);
+  handleError(signUpErr);
 
   return {
     success: true,
@@ -221,17 +239,35 @@ export async function registerUserWithOrg(username, password, orgMode, orgValue)
 }
 
 export async function approveUser(userId, data) {
-  const updates = {};
-  if (data) {
-    if (data.Status) updates.status = data.Status;
-    if (data.Role) updates.role = data.Role;
-    if (data.Name !== undefined) updates.name = data.Name;
-    if (data.Phone !== undefined) updates.phone = data.Phone;
-    if (data.Password) updates.password = data.Password;
-    if (data.OrganizationID) updates.organization_id = data.OrganizationID;
-  }
-  const { error } = await supabase.from("users").update(updates).eq("id", userId);
-  handleError(error);
+  if (!data) return getTable("Users");
+  
+  // Fetch current user details to have full context for updating claims
+  const { data: profile } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", userId)
+    .single();
+    
+  if (!profile) throw new Error("Пользователь не найден");
+  
+  const appProfile = toApp("users", profile);
+  
+  const role = data.Role || appProfile.Role;
+  const status = data.Status || appProfile.Status;
+  const orgId = data.OrganizationID || appProfile.OrganizationID;
+  const name = data.Name !== undefined ? data.Name : (appProfile.Name || "");
+  const phone = data.Phone !== undefined ? data.Phone : (appProfile.Phone || "");
+
+  const { error: rpcErr } = await supabase.rpc("update_user_claims", {
+    target_user_id: userId,
+    new_role: role,
+    new_status: status,
+    new_org_id: orgId,
+    new_name: name,
+    new_phone: phone
+  });
+  handleError(rpcErr);
+  
   return getTable("Users");
 }
 
@@ -246,13 +282,33 @@ export async function getUsernames() {
 export async function updateUserProfile(userId, newPassword, newName, newPhone) {
   if (!userId) throw new Error("Укажите пользователя");
 
-  const updates = {};
-  if (newPassword) updates.password = newPassword;
-  if (newName !== undefined) updates.name = newName;
-  if (newPhone !== undefined) updates.phone = newPhone;
+  // Update password in Supabase Auth if provided
+  if (newPassword) {
+    const { error: authErr } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    handleError(authErr);
+  }
 
-  const { error } = await supabase.from("users").update(updates).eq("id", userId);
-  handleError(error);
+  // Update name and phone in public.users
+  const { error: dbErr } = await supabase
+    .from("users")
+    .update({
+      name: newName,
+      phone: newPhone
+    })
+    .eq("id", userId);
+  handleError(dbErr);
+
+  // Update auth.users metadata to match
+  const { error: metaErr } = await supabase.auth.updateUser({
+    data: {
+      name: newName,
+      phone: newPhone
+    }
+  });
+  handleError(metaErr);
+
   return { success: true };
 }
 

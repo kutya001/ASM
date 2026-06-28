@@ -257,6 +257,11 @@ export const useMainStore = defineStore("main", {
         supabase.removeChannel(this._realtimeChannel);
         this._realtimeChannel = null;
       }
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.warn("Auth signout failed silently:", e);
+      }
       this.user = null;
       this.db = {
         records: [],
