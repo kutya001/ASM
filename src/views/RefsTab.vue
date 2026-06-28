@@ -194,19 +194,19 @@
           </div>
         </div>
 
-        <!-- Grouped services list with Accordion (Identical styling to brand tree) -->
+        <!-- Grouped services list with Accordion -->
         <div class="space-y-3">
           <div
             v-for="group in tenantGroupedServices"
             :key="group.category.ID"
-            class="border border-slate-200/50 rounded-2xl bg-white overflow-hidden shadow-sm transition-all"
+            class="border border-slate-250/60 rounded-2xl bg-white overflow-hidden shadow-sm transition-all"
           >
-            <!-- Category header (clickable) -->
+            <!-- Category header (clickable with light gray background) -->
             <div
               @click="toggleCategoryExpanded(group.category.ID)"
-              class="px-4 py-3 flex justify-between items-center hover:bg-slate-50/50 transition cursor-pointer"
+              class="bg-slate-50 border-b border-slate-100 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition"
             >
-              <span class="text-xs font-black text-slate-850 uppercase tracking-wider flex items-center gap-2">
+              <span class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
                 <span class="material-symbols-outlined text-[18px] text-slate-450 transition-transform" :class="isCategoryExpanded(group.category.ID) ? 'rotate-90' : ''">
                   chevron_right
                 </span>
@@ -219,7 +219,7 @@
             </div>
             
             <!-- Category Services list -->
-            <div v-if="isCategoryExpanded(group.category.ID)" class="divide-y divide-slate-100 bg-slate-50/30 border-t border-slate-100 animate-fade-in">
+            <div v-if="isCategoryExpanded(group.category.ID)" class="divide-y divide-slate-100 bg-white animate-fade-in">
               <div
                 v-for="s in group.services"
                 :key="s.ID"
@@ -253,9 +253,20 @@
       </div>
 
       <!-- Cars Configuration for Tenant (Accordion List) -->
-      <div v-if="activeOrgTab === 'cars'" class="space-y-4">
-        <!-- Controls bar with icons -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div v-if="activeOrgTab === 'cars'" class="space-y-4 animate-fade-in">
+        <!-- Controls bar with icons - All on a single horizontal row -->
+        <div class="bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-sm flex items-center justify-between gap-3 text-xs font-bold">
+          <!-- Left side: Toggle "Мои" -->
+          <label class="flex items-center gap-1.5 cursor-pointer text-[10px] font-black text-slate-550 uppercase tracking-wider m-0">
+            <input
+              type="checkbox"
+              v-model="onlyOurCars"
+              class="w-4 h-4 rounded text-indigo-600 border-slate-350 focus:ring-indigo-500 cursor-pointer"
+            />
+            Мои
+          </label>
+
+          <!-- Right side: Icon Controls + Save button -->
           <div class="flex items-center gap-2">
             <!-- Icon Expand All -->
             <button @click="expandAllBrands" title="Развернуть все марки" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-650 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
@@ -270,20 +281,20 @@
               <span class="material-symbols-outlined text-[18px]">done_all</span>
             </button>
             <!-- Icon Reset All -->
-            <button @click="clearAllBrands" title="Сбросить всё" class="w-8 h-8 rounded-xl bg-red-50 text-red-650 border-none flex items-center justify-center cursor-pointer hover:bg-red-105 transition">
+            <button @click="clearAllBrands" title="Сбросить всё" class="w-8 h-8 rounded-xl bg-red-50 text-red-650 border-none flex items-center justify-center cursor-pointer hover:bg-red-100 transition">
               <span class="material-symbols-outlined text-[18px]">restart_alt</span>
             </button>
-          </div>
-          
-          <div class="flex items-center gap-3">
-            <label class="flex items-center gap-2 cursor-pointer text-xs font-black text-slate-500 uppercase tracking-wider">
-              <input
-                type="checkbox"
-                v-model="onlyOurCars"
-                class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
-              />
-              Только наши авто
-            </label>
+
+            <!-- Save Changes Button (Active only when there are changes) -->
+            <button
+              @click="saveCarChanges"
+              :disabled="!hasCarChanges"
+              class="h-8 px-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition border-none flex items-center gap-1.5 shadow"
+              :class="hasCarChanges ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-indigo-100/50' : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'"
+            >
+              <span class="material-symbols-outlined text-[14px]">save</span>
+              Сохранить
+            </button>
           </div>
         </div>
 
@@ -292,11 +303,11 @@
           <div
             v-for="b in filteredGlobalBrands"
             :key="b.ID"
-            class="border border-slate-200/50 bg-white rounded-2xl overflow-hidden shadow-sm transition"
+            class="border border-slate-250/60 bg-white rounded-2xl overflow-hidden shadow-sm transition"
           >
-            <!-- Brand header (Identical styling to price list category) -->
+            <!-- Brand header (Identical styling to price list category, light gray bg) -->
             <div
-              class="px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition cursor-pointer"
+              class="bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center justify-between hover:bg-slate-100 transition cursor-pointer"
               @click="toggleBrandExpanded(b.ID)"
             >
               <div class="flex items-center gap-3.5" @click.stop>
@@ -308,37 +319,37 @@
                 <!-- Brand Checkbox (controls brand & all models) -->
                 <input
                   type="checkbox"
-                  :checked="isOrgBrandActive(b.ID)"
-                  @change="toggleOrgBrandWithModels(b.ID)"
+                  :checked="isLocalBrandActive(b.ID)"
+                  @change="toggleLocalBrandWithModels(b.ID)"
                   class="w-4 h-4 rounded text-indigo-600 border-slate-350 focus:ring-indigo-500 cursor-pointer"
                 />
                 
-                <span class="text-xs font-black text-slate-855 uppercase tracking-wider">{{ b.Name }}</span>
+                <span class="text-xs font-black text-slate-850 uppercase tracking-wider">{{ b.Name }}</span>
               </div>
               
               <div class="flex items-center gap-3">
-                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full" :class="isOrgBrandActive(b.ID) ? 'bg-indigo-50 text-indigo-600 border border-indigo-150/30' : 'bg-slate-100 text-slate-400'">
-                  {{ countActiveBrandModels(b.ID) }} / {{ brandModels(b.ID).length }}
+                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full" :class="isLocalBrandActive(b.ID) ? 'bg-indigo-50 text-indigo-600 border border-indigo-150/30' : 'bg-slate-100 text-slate-400'">
+                  {{ countLocalBrandModels(b.ID) }} / {{ brandModels(b.ID).length }}
                 </span>
               </div>
             </div>
 
-            <!-- Models list container (renders if expanded) -->
-            <div v-if="isBrandExpanded(b.ID)" class="px-4 py-3.5 bg-slate-50/30 border-t border-slate-100 animate-fade-in">
+            <!-- Models list container (renders if expanded, white background) -->
+            <div v-if="isBrandExpanded(b.ID)" class="px-4 py-3.5 bg-white animate-fade-in">
               <!-- Models grid -->
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 <div
                   v-for="m in filteredBrandModels(b.ID)"
                   :key="m.ID"
-                  @click="toggleOrgModel(m.ID)"
-                  class="border border-slate-200 rounded-xl p-2.5 flex items-center justify-between cursor-pointer hover:border-indigo-400 transition"
-                  :class="isOrgModelActive(m.ID) ? 'bg-indigo-50/40 border-indigo-450' : 'bg-white'"
+                  @click="toggleLocalModel(m.ID)"
+                  class="border border-slate-200 rounded-xl p-2.5 flex items-center justify-between cursor-pointer hover:border-indigo-400 transition animate-fade-in"
+                  :class="isLocalModelActive(m.ID) ? 'bg-indigo-50/40 border-indigo-450' : 'bg-white'"
                 >
-                  <span class="text-xs font-semibold" :class="isOrgModelActive(m.ID) ? 'text-indigo-700' : 'text-slate-700'">{{ m.Name }}</span>
+                  <span class="text-xs font-semibold" :class="isLocalModelActive(m.ID) ? 'text-indigo-700' : 'text-slate-700'">{{ m.Name }}</span>
                   <input
                     type="checkbox"
-                    :checked="isOrgModelActive(m.ID)"
-                    @click.stop="toggleOrgModel(m.ID)"
+                    :checked="isLocalModelActive(m.ID)"
+                    @click.stop="toggleLocalModel(m.ID)"
                     class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-350 focus:ring-indigo-500 cursor-pointer"
                   />
                 </div>
@@ -349,7 +360,7 @@
             </div>
           </div>
           <div v-if="filteredGlobalBrands.length === 0" class="bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
-            По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска или фильтр «Только наши авто».
+            По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска или фильтр «Мои».
           </div>
         </div>
       </div>
@@ -363,7 +374,7 @@
             <h3 class="text-sm font-black text-slate-800 m-0 uppercase tracking-wider">Шаблоны услуг</h3>
             <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Выберите готовые услуги для прайс-листа</div>
           </div>
-          <button @click="showImportServicesModal = false" class="p-1 text-slate-400 hover:text-slate-600 rounded-full border-none bg-transparent cursor-pointer flex items-center">
+          <button @click="showImportServicesModal = false" class="p-1 text-slate-400 hover:text-slate-650 rounded-full border-none bg-transparent cursor-pointer flex items-center">
             <span class="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -404,7 +415,7 @@
                     <input
                       type="number"
                       v-model.number="templatePrices[gs.ID]"
-                      class="w-full px-2 text-center text-xs font-black text-slate-850 border-none outline-none"
+                      class="w-full px-2 text-center text-xs font-black text-slate-855 border-none outline-none"
                       placeholder="Цена"
                     />
                   </div>
@@ -437,7 +448,7 @@
           />
         </div>
         <div class="flex gap-2 pt-2">
-          <button @click="editingService = null" class="flex-1 h-11 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs transition cursor-pointer">
+          <button @click="editingService = null" class="flex-1 h-11 border border-slate-200 text-slate-655 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs transition cursor-pointer">
             Отмена
           </button>
           <button @click="saveNewPrice" class="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition cursor-pointer border-none shadow-md shadow-indigo-100">
@@ -481,7 +492,7 @@
         </div>
 
         <div class="flex gap-2 pt-2">
-          <button @click="showCustomServiceModal = false" class="flex-1 h-11 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs transition cursor-pointer">
+          <button @click="showCustomServiceModal = false" class="flex-1 h-11 border border-slate-200 text-slate-655 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs transition cursor-pointer">
             Отмена
           </button>
           <button @click="saveCustomService" class="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition cursor-pointer border-none shadow-md shadow-indigo-100">
@@ -546,10 +557,8 @@ export default {
       return this.store.user && this.store.user.Role === 'Superadmin';
     },
     activeOrgBrands() {
-      const activeBrandIds = (this.db.organizationbrands || [])
-        .filter(ob => String(ob.OrganizationID) === String(this.store.user.OrganizationID))
-        .map(ob => ob.BrandID);
-      return (this.db.globalbrands || []).filter(b => activeBrandIds.includes(b.ID));
+      // Based on local draft selection
+      return (this.db.globalbrands || []).filter(b => this.localOrgBrands.includes(b.ID));
     },
     tenantGroupedServices() {
       const categories = this.db.servicecategories || [];
@@ -571,12 +580,9 @@ export default {
     filteredGlobalBrands() {
       let list = this.db.globalbrands || [];
       
-      // Filter by 'Only our cars'
+      // Filter by 'Мои' (draft)
       if (this.onlyOurCars) {
-        const activeBrandIds = (this.db.organizationbrands || [])
-          .filter(ob => String(ob.OrganizationID) === String(this.store.user.OrganizationID))
-          .map(ob => ob.BrandID);
-        list = list.filter(b => activeBrandIds.includes(b.ID));
+        list = list.filter(b => this.localOrgBrands.includes(b.ID));
       }
       
       // Filter by global search query
@@ -590,6 +596,26 @@ export default {
       }
       
       return list;
+    },
+    hasCarChanges() {
+      const myOrgId = this.store.user.OrganizationID;
+      
+      // Initial lists from DB
+      const dbBrands = (this.db.organizationbrands || [])
+        .filter(ob => String(ob.OrganizationID) === String(myOrgId))
+        .map(ob => ob.BrandID);
+      const dbModels = (this.db.organizationmodels || [])
+        .filter(om => String(om.OrganizationID) === String(myOrgId))
+        .map(om => om.ModelID);
+      
+      if (this.localOrgBrands.length !== dbBrands.length) return true;
+      if (this.localOrgModelIds.length !== dbModels.length) return true;
+      
+      const brandsDiff = this.localOrgBrands.some(id => !dbBrands.includes(id)) || dbBrands.some(id => !this.localOrgBrands.includes(id));
+      if (brandsDiff) return true;
+      
+      const modelsDiff = this.localOrgModelIds.some(id => !dbModels.includes(id)) || dbModels.some(id => !this.localOrgModelIds.includes(id));
+      return modelsDiff;
     }
   },
   data() {
@@ -617,7 +643,11 @@ export default {
       // Accordion states
       expandedCategories: [],
       expandedBrands: [],
-      onlyOurCars: false
+      onlyOurCars: false,
+      
+      // Local draft buffers for cars setup (enables "Save changes" button pattern)
+      localOrgBrands: [],
+      localOrgModelIds: []
     };
   },
   watch: {
@@ -648,7 +678,6 @@ export default {
           }
         });
         
-        // Also expand matching categories
         const matchingCatIds = (this.db.servicecategories || [])
           .filter(cat => {
             const services = (this.db.services || []).filter(s => s.CategoryID === cat.ID);
@@ -666,13 +695,27 @@ export default {
     db: {
       immediate: true,
       handler(newDb) {
-        if (newDb && newDb.servicecategories && this.expandedCategories.length === 0) {
-          this.expandedCategories = newDb.servicecategories.map(c => c.ID);
+        if (newDb) {
+          if (newDb.servicecategories && this.expandedCategories.length === 0) {
+            this.expandedCategories = newDb.servicecategories.map(c => c.ID);
+          }
+          // Synchronize local buffers with DB updates
+          this.syncLocalCars();
         }
       }
     }
   },
   methods: {
+    syncLocalCars() {
+      const myOrgId = this.store.user && this.store.user.OrganizationID;
+      if (!myOrgId) return;
+      this.localOrgBrands = (this.db.organizationbrands || [])
+        .filter(ob => String(ob.OrganizationID) === String(myOrgId))
+        .map(ob => ob.BrandID);
+      this.localOrgModelIds = (this.db.organizationmodels || [])
+        .filter(om => String(om.OrganizationID) === String(myOrgId))
+        .map(om => om.ModelID);
+    },
     getBrandName(brandId) {
       const list = this.db.globalbrands || this.db.brands || [];
       const brand = list.find(b => String(b.ID) === String(brandId));
@@ -737,10 +780,8 @@ export default {
     collapseAllBrands() {
       this.expandedBrands = [];
     },
-    countActiveBrandModels(brandId) {
-      const activeModelIds = (this.db.organizationmodels || [])
-        .filter(om => String(om.OrganizationID) === String(this.store.user.OrganizationID))
-        .map(om => om.ModelID);
+    countLocalBrandModels(brandId) {
+      const activeModelIds = this.localOrgModelIds;
       return this.brandModels(brandId).filter(m => activeModelIds.includes(m.ID)).length;
     },
 
@@ -851,60 +892,46 @@ export default {
       this.showCustomServiceModal = false;
     },
 
-    // Org Cars Configuration
-    isOrgBrandActive(brandId) {
-      return (this.db.organizationbrands || []).some(
-        ob => String(ob.OrganizationID) === String(this.store.user.OrganizationID) && String(ob.BrandID) === String(brandId)
-      );
+    // Local Cars Configuration Draft Methods (Instead of calling dispatchSync directly on click)
+    isLocalBrandActive(brandId) {
+      return this.localOrgBrands.includes(brandId);
     },
-    isOrgModelActive(modelId) {
-      return (this.db.organizationmodels || []).some(
-        om => String(om.OrganizationID) === String(this.store.user.OrganizationID) && String(om.ModelID) === String(modelId)
-      );
+    isLocalModelActive(modelId) {
+      return this.localOrgModelIds.includes(modelId);
     },
-    toggleOrgBrandWithModels(brandId) {
-      const orgId = this.store.user.OrganizationID;
-      const active = this.isOrgBrandActive(brandId);
+    toggleLocalBrandWithModels(brandId) {
+      const active = this.isLocalBrandActive(brandId);
+      const modelsOfBrand = this.brandModels(brandId).map(m => m.ID);
       
       if (active) {
-        this.store.dispatchSync('deleteRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
-        
-        const modelsOfBrand = this.brandModels(brandId);
-        modelsOfBrand.forEach(m => {
-          if (this.isOrgModelActive(m.ID)) {
-            this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: m.ID }, 'OrganizationModels');
+        // Remove brand from local
+        this.localOrgBrands = this.localOrgBrands.filter(id => id !== brandId);
+        // Remove all models of this brand from local
+        this.localOrgModelIds = this.localOrgModelIds.filter(id => !modelsOfBrand.includes(id));
+      } else {
+        // Add brand
+        this.localOrgBrands.push(brandId);
+        // Add all models
+        modelsOfBrand.forEach(mid => {
+          if (!this.localOrgModelIds.includes(mid)) {
+            this.localOrgModelIds.push(mid);
           }
         });
-        this.store.showToast('Марка и связанные модели отключены');
-      } else {
-        this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
-        
-        const modelsOfBrand = this.brandModels(brandId);
-        const newModelObjs = modelsOfBrand.map(m => ({
-          OrganizationID: orgId,
-          ModelID: m.ID
-        }));
-        if (newModelObjs.length > 0) {
-          this.store.dispatchSync('addRows', newModelObjs, 'OrganizationModels');
-        }
-        this.store.showToast('Марка и все её модели подключены');
       }
     },
-    toggleOrgModel(modelId) {
-      const orgId = this.store.user.OrganizationID;
-      const active = this.isOrgModelActive(modelId);
-      
+    toggleLocalModel(modelId) {
+      const active = this.isLocalModelActive(modelId);
       const modelObj = (this.db.globalmodels || []).find(m => m.ID === modelId);
       if (!modelObj) return;
       const brandId = modelObj.BrandID;
       
       if (active) {
-        this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: modelId }, 'OrganizationModels');
+        this.localOrgModelIds = this.localOrgModelIds.filter(id => id !== modelId);
       } else {
-        if (!this.isOrgBrandActive(brandId)) {
-          this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
+        this.localOrgModelIds.push(modelId);
+        if (!this.localOrgBrands.includes(brandId)) {
+          this.localOrgBrands.push(brandId);
         }
-        this.store.dispatchSync('addRow', { OrganizationID: orgId, ModelID: modelId }, 'OrganizationModels');
       }
     },
     brandModels(brandId) {
@@ -919,72 +946,73 @@ export default {
       return list;
     },
     selectAllBrands() {
-      const orgId = this.store.user.OrganizationID;
-      const unselectedBrands = (this.db.globalbrands || []).filter(b => !this.isOrgBrandActive(b.ID));
-      if (unselectedBrands.length === 0) return this.store.showToast('Все марки уже выбраны');
-
-      const brandObjs = unselectedBrands.map(b => ({
-        OrganizationID: orgId,
-        BrandID: b.ID
-      }));
-      this.store.dispatchSync('addRows', brandObjs, 'OrganizationBrands');
-
-      const modelObjs = [];
-      (this.db.globalbrands || []).forEach(b => {
-        const modelsOfBrand = this.brandModels(b.ID);
-        modelsOfBrand.forEach(m => {
-          if (!this.isOrgModelActive(m.ID)) {
-            modelObjs.push({
-              OrganizationID: orgId,
-              ModelID: m.ID
-            });
-          }
-        });
-      });
-      if (modelObjs.length > 0) {
-        this.store.dispatchSync('addRows', modelObjs, 'OrganizationModels');
-      }
-
-      this.store.showToast('Подключены все марки и модели авто');
+      // Add all global brands and models locally
+      this.localOrgBrands = (this.db.globalbrands || []).map(b => b.ID);
+      this.localOrgModelIds = (this.db.globalmodels || []).map(m => m.ID);
+      this.store.showToast('Выбраны все доступные автомобили локально');
     },
     clearAllBrands() {
-      if (confirm('Сбросить выбор всех марок и моделей? Ваши мастера не смогут выбрать автомобили, пока вы не отметите их заново.')) {
-        const orgId = this.store.user.OrganizationID;
-        this.store.dispatchSync('deleteRow', { OrganizationID: orgId }, 'OrganizationBrands');
-        this.store.dispatchSync('deleteRow', { OrganizationID: orgId }, 'OrganizationModels');
-        this.selectedConfigBrandId = '';
-        this.store.showToast('Выбор сброшен');
-      }
+      this.localOrgBrands = [];
+      this.localOrgModelIds = [];
+      this.selectedConfigBrandId = '';
+      this.store.showToast('Выбор очищен локально');
     },
     selectAllBrandModels(brandId) {
-      const orgId = this.store.user.OrganizationID;
-      const models = this.brandModels(brandId);
-      const unselected = models.filter(m => !this.isOrgModelActive(m.ID));
-      if (unselected.length === 0) return this.store.showToast('Все модели этой марки уже выбраны');
-
-      if (!this.isOrgBrandActive(brandId)) {
-        this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
+      if (!this.localOrgBrands.includes(brandId)) {
+        this.localOrgBrands.push(brandId);
       }
-
-      const objects = unselected.map(m => ({
-        OrganizationID: orgId,
-        ModelID: m.ID
-      }));
-      this.store.dispatchSync('addRows', objects, 'OrganizationModels');
-      this.store.showToast(`Подключено моделей: ${objects.length}`);
+      const models = this.brandModels(brandId);
+      models.forEach(m => {
+        if (!this.localOrgModelIds.includes(m.ID)) {
+          this.localOrgModelIds.push(m.ID);
+        }
+      });
     },
     clearAllBrandModels(brandId) {
-      const orgId = this.store.user.OrganizationID;
-      const models = this.brandModels(brandId);
-      const activeModels = (this.db.organizationmodels || []).filter(
-        om => String(om.OrganizationID) === String(orgId) && models.some(m => String(m.ID) === String(om.ModelID))
-      );
-      if (activeModels.length === 0) return;
+      const models = this.brandModels(brandId).map(m => m.ID);
+      this.localOrgModelIds = this.localOrgModelIds.filter(id => !models.includes(id));
+    },
 
-      activeModels.forEach(om => {
-        this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: om.ModelID }, 'OrganizationModels');
+    // SAVE ACTIONS (Saves local buffers to Supabase backend)
+    async saveCarChanges() {
+      const orgId = this.store.user.OrganizationID;
+      
+      // Get initial DB structures
+      const dbBrands = (this.db.organizationbrands || [])
+        .filter(ob => String(ob.OrganizationID) === String(orgId))
+        .map(ob => ob.BrandID);
+      const dbModels = (this.db.organizationmodels || [])
+        .filter(om => String(om.OrganizationID) === String(orgId))
+        .map(om => om.ModelID);
+      
+      // 1. Brands deletions & insertions
+      const brandsToDelete = dbBrands.filter(id => !this.localOrgBrands.includes(id));
+      const brandsToAdd = this.localOrgBrands.filter(id => !dbBrands.includes(id));
+      
+      // 2. Models deletions & insertions
+      const modelsToDelete = dbModels.filter(id => !this.localOrgModelIds.includes(id));
+      const modelsToAdd = this.localOrgModelIds.filter(id => !dbModels.includes(id));
+      
+      // Run dispatches
+      // Insertions
+      if (brandsToAdd.length > 0) {
+        const brandRows = brandsToAdd.map(bid => ({ OrganizationID: orgId, BrandID: bid }));
+        this.store.dispatchSync('addRows', brandRows, 'OrganizationBrands');
+      }
+      if (modelsToAdd.length > 0) {
+        const modelRows = modelsToAdd.map(mid => ({ OrganizationID: orgId, ModelID: mid }));
+        this.store.dispatchSync('addRows', modelRows, 'OrganizationModels');
+      }
+      
+      // Deletions
+      brandsToDelete.forEach(bid => {
+        this.store.dispatchSync('deleteRow', { OrganizationID: orgId, BrandID: bid }, 'OrganizationBrands');
       });
-      this.store.showToast('Модели марки отключены');
+      modelsToDelete.forEach(mid => {
+        this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: mid }, 'OrganizationModels');
+      });
+      
+      this.store.showToast('Список обслуживаемых автомобилей успешно сохранен!');
     }
   }
 }
