@@ -1405,7 +1405,6 @@ export default {
       if (isNew) {
         payload.ID = generateUUID();
         this.recordForm.ID = payload.ID;
-        this.store.db.records.unshift(payload);
         this.store.dispatchSync("addRow", payload, "Records");
       } else {
         let idx = this.store.db.records.findIndex((x) => x.ID === payload.ID);

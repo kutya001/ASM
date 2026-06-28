@@ -299,19 +299,22 @@ export const useMainStore = defineStore("main", {
               ...payload, 
               ID: payload.ID
             };
-            if (key === "records") {
-              if (tempItem.ServicesJSON) {
-                try {
-                  tempItem.ServicesJSON = typeof tempItem.ServicesJSON === "string" ? JSON.parse(tempItem.ServicesJSON) : tempItem.ServicesJSON;
-                } catch (e) {
+            const exists = this.db[key].some(x => x.ID === tempItem.ID);
+            if (!exists) {
+              if (key === "records") {
+                if (tempItem.ServicesJSON) {
+                  try {
+                    tempItem.ServicesJSON = typeof tempItem.ServicesJSON === "string" ? JSON.parse(tempItem.ServicesJSON) : tempItem.ServicesJSON;
+                  } catch (e) {
+                    tempItem.ServicesJSON = [];
+                  }
+                } else {
                   tempItem.ServicesJSON = [];
                 }
+                this.db.records.unshift(tempItem);
               } else {
-                tempItem.ServicesJSON = [];
+                this.db[key].push(tempItem);
               }
-              this.db.records.unshift(tempItem);
-            } else {
-              this.db[key].push(tempItem);
             }
           }
         } else if (taskName === "addRows" && sheet) {

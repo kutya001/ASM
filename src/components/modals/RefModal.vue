@@ -232,9 +232,6 @@ export default {
 
         if (isNew) {
           payload.ID = generateUUID();
-          if (!this.store.db[this.activeRefTab])
-            this.store.db[this.activeRefTab] = [];
-          this.store.db[this.activeRefTab].push(payload);
           this.store.dispatchSync("addRow", payload, sheet);
         } else {
           let idx = this.store.db[this.activeRefTab].findIndex(
