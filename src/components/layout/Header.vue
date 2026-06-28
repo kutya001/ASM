@@ -121,6 +121,7 @@ import { useMainStore } from "../../store";
 export default {
   props: {
     activeTab: { type: String, required: true },
+    refsSubTabTitle: { type: String, default: "" },
     searchQuery: { type: String, default: "" },
     isSearchExpanded: { type: Boolean, default: false },
     isFiltersExpanded: { type: Boolean, default: false },
@@ -172,7 +173,7 @@ export default {
         case "records":
           return "Записи";
         case "refs":
-          return "Справочники";
+          return this.refsSubTabTitle ? `Справочники — ${this.refsSubTabTitle}` : "Справочники";
         case "users":
           return "Персонал";
         case "applications":
@@ -210,7 +211,7 @@ export default {
     getSearchPlaceholder(tab) {
       switch (tab) {
         case "refs":
-          return "Поиск услуг...";
+          return this.refsSubTabTitle ? `Поиск: ${this.refsSubTabTitle.toLowerCase()}...` : "Поиск услуг...";
         case "applications":
           return "Поиск заявок...";
         case "users":

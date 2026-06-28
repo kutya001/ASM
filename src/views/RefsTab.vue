@@ -8,148 +8,193 @@
           v-for="(title, key) in adminTabs"
           :key="key"
           @click="activeAdminTab = key"
-          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer"
+          class="flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all border-none cursor-pointer flex items-center justify-center gap-1.5"
           :class="activeAdminTab === key ? 'bg-white text-indigo-600 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'"
         >
+          <span class="material-symbols-outlined text-[15px]">{{ getAdminTabIcon(key) }}</span>
           {{ title }}
         </button>
       </div>
 
       <!-- Categories Admin -->
       <div v-if="activeAdminTab === 'categories'" class="space-y-3">
-        <div class="flex justify-between items-center">
-          <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">Категории услуг</h3>
-          <button @click="openAddModal('categories')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+        <div class="flex justify-end items-center">
+          <button @click="openAddModal('categories')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1 shadow-sm">
             <span class="material-symbols-outlined text-[14px]">add</span> Добавить
           </button>
         </div>
-        <div class="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
-          <table class="w-full text-left border-collapse table-auto">
-            <thead class="bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Название</th>
-                <th class="px-4 py-2 w-14"></th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="cat in db.servicecategories" :key="cat.ID" class="hover:bg-slate-50">
-                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ cat.Name }}</td>
-                <td class="px-4 py-2 text-right shrink-0">
-                  <button @click="deleteItem('ServiceCategories', cat.ID, 'servicecategories')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
-                    <i class="bi bi-trash-fill text-xs"></i>
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="!db.servicecategories || db.servicecategories.length === 0">
-                <td colspan="2" class="px-4 py-6 text-center text-slate-400 font-medium text-xs">Нет категорий</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="bg-white border border-slate-250/60 rounded-2xl overflow-hidden shadow-sm divide-y divide-slate-100">
+          <div v-for="cat in filteredAdminCategories" :key="cat.ID" class="px-4 py-3 flex justify-between items-center hover:bg-slate-50/60 transition group">
+            <span class="text-xs font-bold text-slate-800">{{ cat.Name }}</span>
+            <button @click="deleteItem('ServiceCategories', cat.ID, 'servicecategories')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+              <i class="bi bi-trash-fill text-[11px]"></i>
+            </button>
+          </div>
+          <div v-if="filteredAdminCategories.length === 0" class="px-4 py-6 text-center text-slate-400 font-bold text-xs">
+            Нет категорий
+          </div>
         </div>
       </div>
 
       <!-- Global Services Templates Admin -->
       <div v-if="activeAdminTab === 'globalservices'" class="space-y-3">
         <div class="flex justify-between items-center">
-          <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">Шаблоны услуг</h3>
-          <button @click="openAddModal('globalservices')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+          <!-- Left side: Expand/collapse all -->
+          <div class="flex gap-1.5 items-center">
+            <button @click="expandAllCategories" title="Развернуть все категории" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-650 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[18px]">unfold_more</span>
+            </button>
+            <button @click="collapseAllCategories" title="Свернуть все" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[18px]">unfold_less</span>
+            </button>
+          </div>
+          <!-- Right side: Add button -->
+          <button @click="openAddModal('globalservices')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1 shadow-sm">
             <span class="material-symbols-outlined text-[14px]">add</span> Добавить
           </button>
         </div>
-        <div class="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
-          <table class="w-full text-left border-collapse table-auto">
-            <thead class="bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Категория</th>
-                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Услуга</th>
-                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Цена шаблона (сом)</th>
-                <th class="px-4 py-2 w-14"></th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="gs in db.globalservices" :key="gs.ID" class="hover:bg-slate-50">
-                <td class="px-4 py-2 text-xs font-semibold text-slate-500">{{ getCategoryName(gs.CategoryID) }}</td>
-                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ gs.Name }}</td>
-                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ Number(gs.DefaultPrice).toLocaleString() }} сом</td>
-                <td class="px-4 py-2 text-right shrink-0">
-                  <button @click="deleteItem('GlobalServices', gs.ID, 'globalservices')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
-                    <i class="bi bi-trash-fill text-xs"></i>
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="!db.globalservices || db.globalservices.length === 0">
-                <td colspan="4" class="px-4 py-6 text-center text-slate-400 font-medium text-xs">Нет шаблонов услуг</td>
-              </tr>
-            </tbody>
-          </table>
+
+        <!-- Grouped services list with Accordion -->
+        <div class="space-y-3">
+          <div
+            v-for="group in adminGroupedGlobalServices"
+            :key="group.category.ID"
+            class="border border-slate-250/60 rounded-2xl bg-white overflow-hidden shadow-sm transition-all"
+          >
+            <!-- Category header (clickable with light gray background) -->
+            <div
+              @click="toggleCategoryExpanded(group.category.ID)"
+              class="bg-slate-50 border-b border-slate-100 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition"
+            >
+              <span class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px] text-slate-450 transition-transform" :class="isCategoryExpanded(group.category.ID) ? 'rotate-90' : ''">
+                  chevron_right
+                </span>
+                {{ group.category.Name }}
+              </span>
+              
+              <span class="text-[9px] font-black uppercase bg-indigo-50 text-indigo-650 px-2 py-0.5 rounded-full border border-indigo-150/30">
+                {{ group.services.length }} усл.
+              </span>
+            </div>
+            
+            <!-- Category Services list -->
+            <div v-if="isCategoryExpanded(group.category.ID)" class="divide-y divide-slate-100 bg-white animate-fade-in">
+              <div
+                v-for="s in group.services"
+                :key="s.ID"
+                class="px-4 py-2.5 flex justify-between items-center hover:bg-slate-50/60 transition group"
+              >
+                <div class="space-y-0.5">
+                  <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    {{ s.Name }}
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-xs font-black text-slate-850">{{ Number(s.DefaultPrice).toLocaleString() }} сом</div>
+                  <div class="flex items-center gap-1.5">
+                    <button @click="deleteItem('GlobalServices', s.ID, 'globalservices')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+                      <i class="bi bi-trash-fill text-[10px]"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div v-if="group.services.length === 0" class="px-4 py-4 text-center text-slate-400 font-bold text-xs italic">
+                Нет услуг в этой категории
+              </div>
+            </div>
+          </div>
+          <div v-if="adminGroupedGlobalServices.length === 0" class="bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
+            По вашему запросу ничего не найдено.
+          </div>
         </div>
       </div>
 
       <!-- Brands Admin -->
       <div v-if="activeAdminTab === 'brands'" class="space-y-3">
-        <div class="flex justify-between items-center">
-          <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">Марки автомобилей</h3>
-          <button @click="openAddModal('brands')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+        <div class="flex justify-end items-center">
+          <button @click="openAddModal('brands')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1 shadow-sm">
             <span class="material-symbols-outlined text-[14px]">add</span> Добавить
           </button>
         </div>
-        <div class="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
-          <table class="w-full text-left border-collapse table-auto">
-            <thead class="bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Название марки</th>
-                <th class="px-4 py-2 w-14"></th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="b in db.globalbrands" :key="b.ID" class="hover:bg-slate-50">
-                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ b.Name }}</td>
-                <td class="px-4 py-2 text-right shrink-0">
-                  <button @click="deleteItem('Brands', b.ID, 'globalbrands')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
-                    <i class="bi bi-trash-fill text-xs"></i>
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="!db.globalbrands || db.globalbrands.length === 0">
-                <td colspan="2" class="px-4 py-6 text-center text-slate-400 font-medium text-xs">Нет марок</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="bg-white border border-slate-250/60 rounded-2xl overflow-hidden shadow-sm divide-y divide-slate-100">
+          <div v-for="b in filteredAdminBrands" :key="b.ID" class="px-4 py-3 flex justify-between items-center hover:bg-slate-50/60 transition group">
+            <span class="text-xs font-bold text-slate-800">{{ b.Name }}</span>
+            <button @click="deleteItem('Brands', b.ID, 'globalbrands')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+              <i class="bi bi-trash-fill text-[11px]"></i>
+            </button>
+          </div>
+          <div v-if="filteredAdminBrands.length === 0" class="px-4 py-6 text-center text-slate-400 font-bold text-xs">
+            Нет марок
+          </div>
         </div>
       </div>
 
       <!-- Models Admin -->
       <div v-if="activeAdminTab === 'models'" class="space-y-3">
         <div class="flex justify-between items-center">
-          <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">Модели автомобилей</h3>
-          <button @click="openAddModal('models')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1">
+          <!-- Left side: Expand/collapse all -->
+          <div class="flex gap-1.5 items-center">
+            <button @click="expandAllBrands" title="Развернуть все марки" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-655 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[18px]">unfold_more</span>
+            </button>
+            <button @click="collapseAllBrands" title="Свернуть все" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 border-none flex items-center justify-center cursor-pointer hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[18px]">unfold_less</span>
+            </button>
+          </div>
+          <!-- Right side: Add button -->
+          <button @click="openAddModal('models')" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-lg border-none hover:bg-indigo-700 transition cursor-pointer flex items-center gap-1 shadow-sm">
             <span class="material-symbols-outlined text-[14px]">add</span> Добавить
           </button>
         </div>
-        <div class="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
-          <table class="w-full text-left border-collapse table-auto">
-            <thead class="bg-slate-50 border-b border-slate-100">
-              <tr>
-                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Марка</th>
-                <th class="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Модель</th>
-                <th class="px-4 py-2 w-14"></th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="m in db.globalmodels" :key="m.ID" class="hover:bg-slate-50">
-                <td class="px-4 py-2 text-xs font-semibold text-slate-500">{{ getBrandName(m.BrandID) }}</td>
-                <td class="px-4 py-2 text-xs font-bold text-slate-800">{{ m.Name }}</td>
-                <td class="px-4 py-2 text-right shrink-0">
-                  <button @click="deleteItem('Models', m.ID, 'globalmodels')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
-                    <i class="bi bi-trash-fill text-xs"></i>
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="!db.globalmodels || db.globalmodels.length === 0">
-                <td colspan="3" class="px-4 py-6 text-center text-slate-400 font-medium text-xs">Нет моделей</td>
-              </tr>
-            </tbody>
-          </table>
+
+        <!-- Dynamic Brand and Model Trees -->
+        <div class="space-y-3">
+          <div
+            v-for="group in adminGroupedModels"
+            :key="group.brand.ID"
+            class="border border-slate-250/60 bg-white rounded-2xl overflow-hidden shadow-sm transition"
+          >
+            <!-- Brand header (clickable with light gray bg) -->
+            <div
+              class="bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center justify-between hover:bg-slate-100 transition cursor-pointer"
+              @click="toggleBrandExpanded(group.brand.ID)"
+            >
+              <div class="flex items-center gap-2">
+                <!-- Toggle arrow -->
+                <span class="material-symbols-outlined text-[18px] text-slate-450 transition-transform" :class="isBrandExpanded(group.brand.ID) ? 'rotate-90' : ''">
+                  chevron_right
+                </span>
+                <span class="text-xs font-black text-slate-850 uppercase tracking-wider">{{ group.brand.Name }}</span>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <span class="text-[9px] font-black uppercase bg-indigo-50 text-indigo-600 border border-indigo-150/30 px-2 py-0.5 rounded-full">
+                  {{ group.models.length }} мод.
+                </span>
+              </div>
+            </div>
+
+            <!-- Models list container (renders if expanded, white background) -->
+            <div v-if="isBrandExpanded(group.brand.ID)" class="divide-y divide-slate-100 bg-white animate-fade-in">
+              <div
+                v-for="m in group.models"
+                :key="m.ID"
+                class="px-4 py-2.5 flex justify-between items-center hover:bg-slate-50/60 transition group"
+              >
+                <span class="text-xs font-bold text-slate-800">{{ m.Name }}</span>
+                <button @click="deleteItem('Models', m.ID, 'globalmodels')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
+                  <i class="bi bi-trash-fill text-[10px]"></i>
+                </button>
+              </div>
+              <div v-if="group.models.length === 0" class="px-4 py-4 text-center text-slate-400 font-bold text-xs italic">
+                Нет моделей у этой марки
+              </div>
+            </div>
+          </div>
+          <div v-if="adminGroupedModels.length === 0" class="bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
+            По вашему запросу ничего не найдено.
+          </div>
         </div>
       </div>
     </div>
@@ -616,6 +661,64 @@ export default {
       
       const modelsDiff = this.localOrgModelIds.some(id => !dbModels.includes(id)) || dbModels.some(id => !this.localOrgModelIds.includes(id));
       return modelsDiff;
+    },
+    filteredAdminCategories() {
+      let list = this.db.servicecategories || [];
+      if (this.searchQuery && this.activeAdminTab === 'categories') {
+        const q = this.searchQuery.toLowerCase().trim();
+        list = list.filter(c => String(c.Name || "").toLowerCase().includes(q));
+      }
+      return list;
+    },
+    filteredAdminBrands() {
+      let list = this.db.globalbrands || [];
+      if (this.searchQuery && this.activeAdminTab === 'brands') {
+        const q = this.searchQuery.toLowerCase().trim();
+        list = list.filter(b => String(b.Name || "").toLowerCase().includes(q));
+      }
+      return list;
+    },
+    adminGroupedGlobalServices() {
+      const categories = this.db.servicecategories || [];
+      let services = this.db.globalservices || [];
+      
+      if (this.searchQuery && this.activeAdminTab === 'globalservices') {
+        const q = this.searchQuery.toLowerCase().trim();
+        services = services.filter(s => String(s.Name || "").toLowerCase().includes(q));
+      }
+      
+      return categories.map(cat => {
+        return {
+          category: cat,
+          services: services.filter(s => s.CategoryID === cat.ID)
+        };
+      }).filter(group => {
+        if (this.searchQuery && this.activeAdminTab === 'globalservices') {
+          return group.services.length > 0;
+        }
+        return true;
+      });
+    },
+    adminGroupedModels() {
+      const brands = this.db.globalbrands || [];
+      let models = this.db.globalmodels || [];
+      
+      if (this.searchQuery && this.activeAdminTab === 'models') {
+        const q = this.searchQuery.toLowerCase().trim();
+        models = models.filter(m => String(m.Name || "").toLowerCase().includes(q));
+      }
+      
+      return brands.map(b => {
+        return {
+          brand: b,
+          models: models.filter(m => m.BrandID === b.ID)
+        };
+      }).filter(group => {
+        if (this.searchQuery && this.activeAdminTab === 'models') {
+          return group.models.length > 0;
+        }
+        return true;
+      });
     }
   },
   data() {
@@ -631,7 +734,7 @@ export default {
       templatePrices: {},
       adminTabs: {
         categories: 'Категории',
-        globalservices: 'Шаблоны услуг',
+        globalservices: 'Услуги',
         brands: 'Марки',
         models: 'Модели'
       },
@@ -664,6 +767,8 @@ export default {
     searchQuery(newQuery) {
       if (newQuery) {
         const q = newQuery.toLowerCase().trim();
+        
+        // Auto-expand brands matching global search query
         const matchingBrandIds = (this.db.globalbrands || [])
           .filter(b => {
             const brandMatch = String(b.Name || "").toLowerCase().includes(q);
@@ -678,10 +783,16 @@ export default {
           }
         });
         
+        // Auto-expand categories matching global search query
         const matchingCatIds = (this.db.servicecategories || [])
           .filter(cat => {
             const services = (this.db.services || []).filter(s => s.CategoryID === cat.ID);
-            return services.some(s => String(s.Name || "").toLowerCase().includes(q));
+            const globalServices = (this.db.globalservices || []).filter(s => s.CategoryID === cat.ID);
+            
+            const servicesMatch = services.some(s => String(s.Name || "").toLowerCase().includes(q));
+            const globalServicesMatch = globalServices.some(s => String(s.Name || "").toLowerCase().includes(q));
+            
+            return servicesMatch || globalServicesMatch;
           })
           .map(c => c.ID);
         
@@ -703,7 +814,19 @@ export default {
           this.syncLocalCars();
         }
       }
+    },
+    activeAdminTab() {
+      this.notifySubTabChanged();
+    },
+    activeOrgTab() {
+      this.notifySubTabChanged();
+    },
+    isGlobalAdmin() {
+      this.notifySubTabChanged();
     }
+  },
+  mounted() {
+    this.notifySubTabChanged();
   },
   methods: {
     syncLocalCars() {
@@ -741,6 +864,24 @@ export default {
           this.showFABMenu = !this.showFABMenu;
         }
       }
+    },
+    getAdminTabIcon(key) {
+      switch (key) {
+        case 'categories': return 'category';
+        case 'globalservices': return 'build';
+        case 'brands': return 'workspace_premium';
+        case 'models': return 'garage';
+        default: return 'build';
+      }
+    },
+    notifySubTabChanged() {
+      let title = "";
+      if (this.isGlobalAdmin) {
+        title = this.adminTabs[this.activeAdminTab] || "";
+      } else {
+        title = this.activeOrgTab === 'services' ? 'Услуги' : 'Автомобили';
+      }
+      this.$emit('sub-tab-changed', title);
     },
 
     // Accordion categories helpers

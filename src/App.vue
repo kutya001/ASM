@@ -41,6 +41,7 @@
     >
       <Header
         :active-tab="activeTab"
+        :refs-sub-tab-title="refsSubTabTitle"
         :search-query="searchQuery"
         @update:search-query="searchQuery = $event"
         :is-search-expanded="isSearchExpanded"
@@ -123,6 +124,7 @@
             @open-ref-modal="openRefModal"
             @open-bulk-modal="openBulkUploadModal"
             @del-row="delRow"
+            @sub-tab-changed="refsSubTabTitle = $event"
           />
 
           <UsersTab
@@ -234,6 +236,7 @@ export default {
       advFilterDate: "",
       advFilterBrand: "",
       advFilterModel: "",
+      refsSubTabTitle: "",
     };
   },
   watch: {

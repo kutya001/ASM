@@ -120,13 +120,13 @@ export default {
           fields: [{ k: "Name", l: "Название категории" }],
         },
         globalservices: {
-          title: "Шаблон услуги",
+          title: "Услуга",
           icon: "build",
           sheet: "GlobalServices",
           fields: [
             { k: "CategoryID", l: "Категория", t: "selectCategory" },
             { k: "Name", l: "Название услуги" },
-            { k: "DefaultPrice", l: "Цена шаблона (сом)", t: "number" },
+            { k: "DefaultPrice", l: "Цена (сом)", t: "number" },
           ],
         },
         brands: {
@@ -226,7 +226,7 @@ export default {
           }
         } else if (this.activeRefTab === 'globalservices') {
           if (!payload.CategoryID) {
-            this.store.showToast("Выберите категорию для шаблона", "error");
+            this.store.showToast("Выберите категорию для услуги", "error");
             this.isSaving = false;
             return;
           }
@@ -281,8 +281,8 @@ export default {
 
         this.store.showToast(
           payload.ID && !isNew
-            ? "Шаблон обновлен"
-            : "Шаблон добавлен",
+            ? "Услуга обновлена"
+            : "Услуга добавлена",
         );
         this.hide();
       } catch (e) {
