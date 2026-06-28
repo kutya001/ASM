@@ -8,6 +8,7 @@ create table if not exists organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   subscription_ends_at timestamptz default (now() + interval '3 days'),
+  max_users integer default 3,
   created_at timestamptz default now()
 );
 
@@ -92,6 +93,17 @@ create table if not exists records (
   created_at timestamptz default now()
 );
 
+-- 8.5. Subscription Logs (Journal)
+create table if not exists subscription_logs (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid references organizations(id) on delete cascade,
+  start_date timestamptz not null default now(),
+  end_date timestamptz not null,
+  max_users integer not null default 3,
+  amount numeric not null default 1500,
+  created_at timestamptz default now()
+);
+
 -- Enable Realtime publication
 begin;
   drop publication if exists supabase_realtime;
@@ -103,7 +115,8 @@ begin;
     models, 
     welcome_screens, 
     game_records, 
-    records;
+    records,
+    subscription_logs;
 commit;
 
 -- 9. Trigger to sync auth.users to public.users
@@ -254,3 +267,15 @@ create policy "Allow all records for same org or Superadmin" on records for all
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
     or organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
   );
+
+-- 13. Subscription Logs RLS & Policies
+alter table subscription_logs enable row level security;
+
+create policy "Allow select subscription_logs for same org or Superadmin" on subscription_logs for select
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
+  );
+
+create policy "Allow write subscription_logs for Superadmin" on subscription_logs for all
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');

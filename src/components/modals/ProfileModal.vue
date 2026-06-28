@@ -226,11 +226,11 @@
                 <span class="block font-black text-sm text-slate-800 mt-1">{{ userOrgName }}</span>
               </div>
               
-              <!-- Subscription Status -->
-              <div class="pt-3 border-t border-slate-100">
+              <!-- Subscription Status & Limits -->
+              <div class="pt-3 border-t border-slate-100 space-y-3">
                 <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest">Статус подписки</span>
                 
-                <div class="mt-2 p-3.5 rounded-xl border flex items-center justify-between gap-3 animate-fade-in"
+                <div class="mt-1 p-3.5 rounded-xl border flex items-center justify-between gap-3 animate-fade-in"
                      :class="isSubActive ? 'bg-emerald-50/50 border-emerald-100 text-emerald-800' : 'bg-rose-50/50 border-rose-100 text-rose-800'">
                   <div>
                     <div class="text-[10px] font-black uppercase">
@@ -244,13 +244,26 @@
                     {{ isSubActive ? 'check_circle' : 'cancel' }}
                   </span>
                 </div>
+
+                <!-- Limits display -->
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+                  <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-150/40 text-left">
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-wider">Штат (лимит)</span>
+                    <span class="block text-slate-800 font-extrabold mt-0.5">{{ orgEmployeesCount }} / {{ orgMaxUsers }} чел.</span>
+                  </div>
+                  <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-150/40 text-left">
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-wider">Расчетный тариф</span>
+                    <span class="block text-indigo-650 font-black mt-0.5">{{ orgCalculatedPrice }} сом / мес</span>
+                  </div>
+                </div>
               </div>
 
               <!-- Payment instruction -->
               <div class="p-3 bg-indigo-50/40 border border-indigo-100/50 rounded-xl space-y-1.5 text-xs text-indigo-900 leading-relaxed font-semibold">
                 <div class="text-[9px] font-black uppercase text-indigo-700 tracking-wider">Инструкция по оплате</div>
-                <div>Стоимость подписки: <span class="font-extrabold text-indigo-750">1000 сом / месяц</span>.</div>
-                <div>Оплата производится переводом на кошелек. Нажмите кнопку ниже, чтобы перейти в чат поддержки WhatsApp и прикрепить скриншот чека об оплате. Администратор проверит и продлит вашу подписку.</div>
+                <div>Базовая стоимость (до 3 сотрудников) — <span class="font-extrabold text-indigo-750">1500 сом / мес</span>.</div>
+                <div>За каждого сотрудника сверх лимита — <span class="font-extrabold text-indigo-750">500 сом / мес</span>.</div>
+                <div>Нажмите кнопку ниже, чтобы перейти в чат поддержки WhatsApp и прикрепить скриншот чека об оплате. Администратор проверит транзакцию и продлит подписку.</div>
               </div>
 
               <!-- Pay Button -->
@@ -324,8 +337,27 @@ export default {
     },
     whatsappPayLink() {
       const orgName = this.userOrgName || "";
-      const text = encodeURIComponent(`Здравствуйте! Отправляю чек для продления подписки организации ${orgName}.`);
+      const org = (this.store.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      let subInfoText = "";
+      if (org) {
+        const info = getSubscriptionDaysLeft(org.SubscriptionEndsAt);
+        subInfoText = info.text;
+      }
+      const message = `Прошу продлить подписку ${orgName}. ${subInfoText}.`;
+      const text = encodeURIComponent(message);
       return `https://wa.me/996500888268?text=${text}`;
+    },
+    orgMaxUsers() {
+      if (!this.user) return 3;
+      const org = (this.store.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      return org ? (org.MaxUsers || 3) : 3;
+    },
+    orgEmployeesCount() {
+      if (!this.user) return 0;
+      return (this.store.db.users || []).filter(u => String(u.OrganizationID) === String(this.user.OrganizationID) && u.Status === 'Approved').length;
+    },
+    orgCalculatedPrice() {
+      return this.calculateSubAmount(this.orgMaxUsers);
     }
   },
   mounted() {
@@ -334,6 +366,11 @@ export default {
     }
   },
   methods: {
+    calculateSubAmount(maxUsers) {
+      const limit = Number(maxUsers) || 3;
+      if (limit <= 3) return 1500;
+      return 1500 + (limit - 3) * 500;
+    },
     open() {
       this.activeProfileTab = "personal";
       if (this.user) {

@@ -59,7 +59,7 @@
             <div class="flex items-center gap-2 mt-0.5 text-[9px] text-slate-400 font-bold flex-wrap">
               <span class="inline-flex items-center gap-0.5 text-indigo-650 bg-indigo-50/40 px-1.5 py-0.5 rounded-lg border border-indigo-150/25">
                 <span class="material-symbols-outlined text-[11px]">groups</span>
-                Штат: {{ getOrgUsersCount(org.ID) }}
+                Штат: {{ getOrgUsersCount(org.ID) }} / {{ org.MaxUsers || 3 }} чел.
               </span>
               <span class="inline-flex items-center gap-0.5 text-slate-655 bg-slate-100/60 px-1.5 py-0.5 rounded-lg border border-slate-200/40">
                 <span class="material-symbols-outlined text-[11px]">list_alt</span>
@@ -165,6 +165,20 @@
                 />
               </div>
 
+              <!-- Max Employees Limit -->
+              <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                  >Лимит сотрудников (пользователей)</label
+                >
+                <input
+                  type="number"
+                  v-model.number="orgForm.MaxUsers"
+                  min="1"
+                  placeholder="Например, 3"
+                  class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 shadow-sm focus:border-indigo-500"
+                />
+              </div>
+
               <!-- Subscription section in Modal -->
               <div class="pt-2 border-t border-slate-100 space-y-3">
                 <span class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Управление подпиской</span>
@@ -189,6 +203,36 @@
                     v-model="orgForm.SubscriptionEndsAt"
                     class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 shadow-sm focus:border-indigo-500"
                   />
+                </div>
+              </div>
+
+              <!-- Subscription Journal Logs -->
+              <div v-if="orgForm.ID" class="pt-2 border-t border-slate-100 space-y-2">
+                <span class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Журнал подписок (транзакций)</span>
+                
+                <div class="max-h-40 overflow-y-auto space-y-1.5 pr-1 text-[10px]">
+                  <div 
+                    v-for="log in getOrgSubscriptionLogs(orgForm.ID)" 
+                    :key="log.ID"
+                    class="bg-white border border-slate-150 p-2.5 rounded-xl flex justify-between items-center text-slate-600 font-semibold"
+                  >
+                    <div class="space-y-0.5">
+                      <div class="text-slate-800 font-extrabold flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[12px] text-slate-500">calendar_month</span>
+                        {{ formatSubDate(log.StartDate) }} — {{ formatSubDate(log.EndDate) }}
+                      </div>
+                      <div class="text-slate-400 text-[9px]">
+                        Лимит: {{ log.MaxUsers }} чел. • Создана {{ formatSubDate(log.CreatedAt) }}
+                      </div>
+                    </div>
+                    <div class="text-indigo-600 font-black text-right shrink-0">
+                      {{ log.Amount }} сом
+                    </div>
+                  </div>
+                  
+                  <div v-if="getOrgSubscriptionLogs(orgForm.ID).length === 0" class="text-center py-4 text-slate-450 italic">
+                    Журнал транзакций пуст
+                  </div>
                 </div>
               </div>
             </div>
@@ -231,7 +275,7 @@ export default {
   },
   data() {
     return {
-      orgForm: { ID: "", Name: "", SubscriptionEndsAt: "" },
+      orgForm: { ID: "", Name: "", SubscriptionEndsAt: "", MaxUsers: 3 },
       isSaving: false,
       bsModal: null
     };
@@ -304,7 +348,8 @@ export default {
         this.orgForm = {
           ID: org.ID,
           Name: org.Name,
-          SubscriptionEndsAt: dateStr
+          SubscriptionEndsAt: dateStr,
+          MaxUsers: org.MaxUsers || 3
         };
       } else {
         const d = new Date();
@@ -312,7 +357,8 @@ export default {
         this.orgForm = {
           ID: "",
           Name: "",
-          SubscriptionEndsAt: d.toISOString().split('T')[0]
+          SubscriptionEndsAt: d.toISOString().split('T')[0],
+          MaxUsers: 3
         };
       }
       if (this.bsModal) this.bsModal.show();
@@ -332,6 +378,17 @@ export default {
       baseDate.setMonth(baseDate.getMonth() + 1);
       this.orgForm.SubscriptionEndsAt = baseDate.toISOString().split('T')[0];
     },
+    calculateSubAmount(maxUsers) {
+      const limit = Number(maxUsers) || 3;
+      if (limit <= 3) return 1500;
+      return 1500 + (limit - 3) * 500;
+    },
+    getOrgSubscriptionLogs(orgId) {
+      if (!this.db.subscriptionlogs) return [];
+      return this.db.subscriptionlogs
+        .filter(l => String(l.OrganizationID) === String(orgId))
+        .sort((a, b) => new Date(b.CreatedAt || 0) - new Date(a.CreatedAt || 0));
+    },
     async saveOrg() {
       const name = String(this.orgForm.Name || "").trim();
       if (!name) {
@@ -344,18 +401,49 @@ export default {
         const isNew = !this.orgForm.ID;
         const payload = {
           Name: name,
-          SubscriptionEndsAt: this.orgForm.SubscriptionEndsAt ? new Date(this.orgForm.SubscriptionEndsAt).toISOString() : null
+          SubscriptionEndsAt: this.orgForm.SubscriptionEndsAt ? new Date(this.orgForm.SubscriptionEndsAt).toISOString() : null,
+          MaxUsers: Number(this.orgForm.MaxUsers) || 3
         };
         if (!isNew) {
           payload.ID = this.orgForm.ID;
         }
 
         if (isNew) {
+          // Creating a new organization
           await this.store.dispatchSync("addRow", payload, "Organizations");
           this.store.showToast("Организация успешно создана");
+
+          // Create first transaction log
+          const newOrg = this.store.db.organizations.find(o => o.Name === name);
+          if (newOrg) {
+            const amount = this.calculateSubAmount(payload.MaxUsers);
+            const logPayload = {
+              OrganizationID: newOrg.ID,
+              StartDate: new Date().toISOString(),
+              EndDate: payload.SubscriptionEndsAt || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+              MaxUsers: payload.MaxUsers,
+              Amount: amount
+            };
+            await this.store.dispatchSync("addRow", logPayload, "SubscriptionLogs");
+          }
         } else {
+          const oldOrg = this.db.organizations.find(o => o.ID === this.orgForm.ID);
+          
           await this.store.dispatchSync("updateRow", payload, "Organizations");
           this.store.showToast("Название организации и подписка обновлены");
+
+          // Add subscription log row if expiration date or max users changed
+          if (oldOrg && (oldOrg.SubscriptionEndsAt !== payload.SubscriptionEndsAt || oldOrg.MaxUsers !== payload.MaxUsers)) {
+            const amount = this.calculateSubAmount(payload.MaxUsers);
+            const logPayload = {
+              OrganizationID: this.orgForm.ID,
+              StartDate: oldOrg.SubscriptionEndsAt ? oldOrg.SubscriptionEndsAt : new Date().toISOString(),
+              EndDate: payload.SubscriptionEndsAt || new Date().toISOString(),
+              MaxUsers: payload.MaxUsers,
+              Amount: amount
+            };
+            await this.store.dispatchSync("addRow", logPayload, "SubscriptionLogs");
+          }
         }
         this.hideOrgModal();
       } catch (e) {

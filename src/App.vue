@@ -337,7 +337,14 @@ export default {
     payWhatsAppLink() {
       if (!this.user) return '';
       const orgName = this.userOrganizationName || '';
-      const text = encodeURIComponent(`Здравствуйте! Отправляю чек для продления подписки организации ${orgName}.`);
+      const org = (this.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      let subInfoText = "";
+      if (org) {
+        const info = getSubscriptionDaysLeft(org.SubscriptionEndsAt);
+        subInfoText = info.text;
+      }
+      const message = `Прошу продлить подписку ${orgName}. ${subInfoText}.`;
+      const text = encodeURIComponent(message);
       return `https://wa.me/996500888268?text=${text}`;
     },
     subscriptionRemainingText() {
@@ -664,6 +671,19 @@ export default {
     // СУПЕРАДМИН
     async approveUser(id) {
       try {
+        const targetUser = this.db.users.find((x) => x.ID === id);
+        if (!targetUser) return;
+
+        const orgId = targetUser.OrganizationID;
+        const org = (this.db.organizations || []).find(o => String(o.ID) === String(orgId));
+        if (org) {
+          const maxUsers = org.MaxUsers || 3;
+          const approvedCount = this.db.users.filter(u => u.OrganizationID === orgId && u.Status === 'Approved').length;
+          if (approvedCount >= maxUsers) {
+            throw new Error(`Превышен лимит сотрудников для вашей организации (лимит: ${maxUsers} чел.). Обратитесь к супер-администратору для расширения лимита.`);
+          }
+        }
+
         let idx = this.db.users.findIndex((x) => x.ID === id);
         if (idx > -1) {
           this.db.users[idx].Status = "Approved";
