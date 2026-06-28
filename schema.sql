@@ -104,6 +104,17 @@ create table if not exists subscription_logs (
   created_at timestamptz default now()
 );
 
+-- 8.6. Support Tickets (Заявки)
+create table if not exists support_tickets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade not null,
+  organization_id uuid references organizations(id) on delete cascade,
+  category text not null,
+  description text not null,
+  status text not null default 'Открыта',
+  created_at timestamptz default now()
+);
+
 -- Enable Realtime publication
 begin;
   drop publication if exists supabase_realtime;
@@ -116,7 +127,8 @@ begin;
     welcome_screens, 
     game_records, 
     records,
-    subscription_logs;
+    subscription_logs,
+    support_tickets;
 commit;
 
 -- 9. Trigger to sync auth.users to public.users
@@ -279,3 +291,21 @@ create policy "Allow select subscription_logs for same org or Superadmin" on sub
 
 create policy "Allow write subscription_logs for Superadmin" on subscription_logs for all
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
+
+-- 14. Support Tickets RLS & Policies
+alter table support_tickets enable row level security;
+
+create policy "Allow select support_tickets for owner or Superadmin" on support_tickets for select
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or user_id = auth.uid()
+  );
+
+create policy "Allow insert support_tickets for authenticated" on support_tickets for insert
+  with check (auth.uid() is not null);
+
+create policy "Allow update support_tickets for owner or Superadmin" on support_tickets for update
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or user_id = auth.uid()
+  );

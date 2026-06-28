@@ -20,8 +20,8 @@
             ></button>
           </div>
           
-          <!-- Tab switch buttons (Only for non-Superadmins) -->
-          <div v-if="user && user.Role !== 'Superadmin'" class="flex gap-1 p-0.5 bg-slate-100 rounded-xl">
+          <!-- Tab switch buttons (Only for SenMaster) -->
+          <div v-if="user && user.Role === 'SenMaster'" class="flex gap-1 p-0.5 bg-slate-100 rounded-xl">
             <button
               type="button"
               @click="activeProfileTab = 'personal'"
@@ -112,6 +112,13 @@
               id="btn-reopen-welcome-modal"
             >
               <i class="bi bi-info-circle-fill"></i> О приложении
+            </button>
+
+            <button
+              @click="triggerCreateTicket"
+              class="flex items-center justify-center gap-2 w-full py-2.5 bg-amber-50 text-amber-700 hover:bg-amber-100/70 rounded-xl font-bold transition border-none cursor-pointer mb-2"
+            >
+              <i class="bi bi-chat-left-text text-base"></i> Заявка администратору
             </button>
 
             <button
@@ -218,7 +225,7 @@
           </div>
 
           <!-- Organization Tab Content -->
-          <div v-if="user && user.Role !== 'Superadmin' && activeProfileTab === 'organization'" class="space-y-4 animate-fade-in text-left">
+          <div v-if="user && user.Role === 'SenMaster' && activeProfileTab === 'organization'" class="space-y-4 animate-fade-in text-left">
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
               <!-- Org Name -->
               <div>
@@ -289,7 +296,7 @@ import { updateUserProfile } from "../../services/api";
 import { formatPhoneInput, getSubscriptionDaysLeft } from "../../utils/helpers";
 
 export default {
-  emits: ["logout", "reopen-welcome"],
+  emits: ["logout", "reopen-welcome", "open-tickets-create"],
   data() {
     return {
       isEditingProfile: false,
@@ -426,6 +433,10 @@ export default {
     openGamesLobby() {
       this.hide();
       this.store.toggleGamesLobby(true);
+    },
+    triggerCreateTicket() {
+      this.hide();
+      this.$emit('open-tickets-create');
     },
   },
 };

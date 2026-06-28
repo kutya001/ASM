@@ -65,6 +65,7 @@
           Оплатить (WhatsApp)
         </a>
         <button
+          v-if="user && user.Role === 'SenMaster'"
           @click="openProfileModal('organization')"
           class="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-655 rounded-xl font-bold text-xs tracking-wider uppercase transition border-none cursor-pointer"
         >
@@ -191,6 +192,11 @@
             v-if="activeTab === 'organizations' && user.Role === 'Superadmin'"
             :db="db"
           />
+
+          <TicketsTab
+            v-if="activeTab === 'tickets'"
+            ref="ticketsTab"
+          />
         </div>
 
         <div
@@ -212,7 +218,7 @@
       <MobileNav v-if="!isImportModalOpen" :active-tab="activeTab" @update:active-tab="activeTab = $event" />
     </main>
 
-    <ProfileModal ref="profileModal" :store="store" @logout="logout" @reopen-welcome="showWelcome = true" />
+    <ProfileModal ref="profileModal" :store="store" @logout="logout" @reopen-welcome="showWelcome = true" @open-tickets-create="handleOpenTicketsCreate" />
     <RecordModal ref="recordModal" :store="store" :user="user" />
     <UserConfigModal ref="userConfigModal" :store="store" @save="refreshUsers" />
     <RefModal ref="refModal" />
@@ -246,6 +252,7 @@ import RefsTab from "./views/RefsTab.vue";
 import DashboardTab from "./views/DashboardTab.vue";
 import RecordsTab from "./views/RecordsTab.vue";
 import OrganizationsTab from "./views/OrganizationsTab.vue";
+import TicketsTab from "./views/TicketsTab.vue";
 import WelcomeScreen from "./views/WelcomeScreen.vue";
 import AuthView from "./views/AuthView.vue";
 import Sidebar from "./components/layout/Sidebar.vue";
@@ -266,6 +273,7 @@ export default {
     DashboardTab,
     RecordsTab,
     OrganizationsTab,
+    TicketsTab,
     WelcomeScreen,
     AuthView,
     Sidebar,
@@ -638,6 +646,14 @@ export default {
       if (this.$refs.profileModal) {
         this.$refs.profileModal.open(tab);
       }
+    },
+    handleOpenTicketsCreate() {
+      this.activeTab = 'tickets';
+      this.$nextTick(() => {
+        if (this.$refs.ticketsTab) {
+          this.$refs.ticketsTab.openCreateModal();
+        }
+      });
     },
     openRecordModal(record = null, application = null) {
       if (this.$refs.recordModal) {

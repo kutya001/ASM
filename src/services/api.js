@@ -58,6 +58,10 @@ const FIELD_MAPS = {
     id: "ID", organization_id: "OrganizationID", start_date: "StartDate", end_date: "EndDate",
     max_users: "MaxUsers", amount: "Amount", created_at: "CreatedAt",
   },
+  support_tickets: {
+    id: "ID", user_id: "UserID", organization_id: "OrganizationID", category: "Category",
+    description: "Description", status: "Status", created_at: "CreatedAt",
+  },
   service_categories: {
     id: "ID", name: "Name",
   },
@@ -92,6 +96,7 @@ const TABLE_MAP = {
   GameRecords: "game_records",
   Organizations: "organizations",
   SubscriptionLogs: "subscription_logs",
+  SupportTickets: "support_tickets",
   ServiceCategories: "service_categories",
   GlobalServices: "global_services",
   OrganizationBrands: "organization_brands",
@@ -109,6 +114,7 @@ const STORE_KEY_MAP = {
   gamerecords: "game_records",
   organizations: "organizations",
   subscriptionlogs: "subscription_logs",
+  supporttickets: "support_tickets",
   servicecategories: "service_categories",
   globalservices: "global_services",
   organizationbrands: "organization_brands",
@@ -360,6 +366,7 @@ export async function getInitData(role, userId, orgId) {
   const orgBrandsQuery = supabase.from("organization_brands").select("*");
   const orgModelsQuery = supabase.from("organization_models").select("*");
   const subscriptionLogsQuery = supabase.from("subscription_logs").select("*").order("created_at", { ascending: false });
+  const supportTicketsQuery = supabase.from("support_tickets").select("*").order("created_at", { ascending: false });
 
   if (!isSuper && orgId) {
     recordsQuery.eq("organization_id", orgId);
@@ -368,6 +375,10 @@ export async function getInitData(role, userId, orgId) {
     orgBrandsQuery.eq("organization_id", orgId);
     orgModelsQuery.eq("organization_id", orgId);
     subscriptionLogsQuery.eq("organization_id", orgId);
+  }
+
+  if (!isSuper) {
+    supportTicketsQuery.eq("user_id", userId);
   }
 
   const [
@@ -384,6 +395,7 @@ export async function getInitData(role, userId, orgId) {
     { data: orgBrands, error: errOB },
     { data: orgModels, error: errOM },
     { data: subscriptionLogs, error: errSubLogs },
+    { data: supportTickets, error: errSubTickets },
   ] = await Promise.all([
     recordsQuery,
     servicesQuery,
@@ -398,6 +410,7 @@ export async function getInitData(role, userId, orgId) {
     orgBrandsQuery,
     orgModelsQuery,
     subscriptionLogsQuery,
+    supportTicketsQuery,
   ]);
 
   if (errRecords) handleError(errRecords);
@@ -413,6 +426,7 @@ export async function getInitData(role, userId, orgId) {
   if (errOB) handleError(errOB);
   if (errOM) handleError(errOM);
   if (errSubLogs) handleError(errSubLogs);
+  if (errSubTickets) handleError(errSubTickets);
 
   const mappedBrands = (brands || []).map((b) => toApp("brands", b));
   const mappedModels = (models || []).map((m) => toApp("models", m));
@@ -444,6 +458,7 @@ export async function getInitData(role, userId, orgId) {
     organizationbrands: (orgBrands || []).map((ob) => toApp("organization_brands", ob)),
     organizationmodels: (orgModels || []).map((om) => toApp("organization_models", om)),
     subscriptionlogs: (subscriptionLogs || []).map((sl) => toApp("subscription_logs", sl)),
+    supporttickets: (supportTickets || []).map((st) => toApp("support_tickets", st)),
   };
 }
 

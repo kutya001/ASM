@@ -12,7 +12,7 @@
       >
         <div class="modal-header border-b border-slate-100 px-6 py-5 bg-white">
           <h5 class="modal-title font-bold text-slate-800 m-0">
-            {{ refForm.ID ? "Редактировать:" : "Добавить:" }}
+            {{ refForm.ID ? (isEditing ? "Изменить:" : "Просмотр:") : "Добавить:" }}
             {{ refMeta[activeRefTab] ? refMeta[activeRefTab].title : "" }}
           </h5>
           <button
@@ -33,6 +33,7 @@
             <select
               v-if="f.t === 'selectCategory'"
               v-model="refForm[f.k]"
+              :disabled="!isEditing"
               class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm outline-none"
             >
               <option v-for="cat in dbCategories" :key="cat.ID" :value="cat.ID">
@@ -42,6 +43,7 @@
             <select
               v-else-if="f.t === 'selectGlobalBrand'"
               v-model="refForm[f.k]"
+              :disabled="!isEditing"
               class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm outline-none"
             >
               <option v-for="b in dbGlobalBrands" :key="b.ID" :value="b.ID">
@@ -51,6 +53,7 @@
             <select
               v-else-if="f.t === 'selectBrand'"
               v-model="refForm[f.k]"
+              :disabled="!isEditing"
               class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm"
             >
               <option v-for="b in sortedBrands" :key="b.ID" :value="b.ID">
@@ -60,6 +63,7 @@
             <select
               v-else-if="f.t === 'selectOrg'"
               v-model="refForm[f.k]"
+              :disabled="!isEditing"
               class="form-select w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 shadow-sm outline-none focus:border-indigo-500"
             >
               <option v-for="org in dbOrganizations" :key="org.ID" :value="org.ID">
@@ -70,17 +74,49 @@
               v-else
               :type="f.t === 'number' ? 'number' : 'text'"
               v-model="refForm[f.k]"
+              :disabled="!isEditing"
               class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 shadow-sm"
             />
           </div>
         </div>
+        
+        <!-- View mode footer -->
+        <div
+          class="modal-footer border-t border-slate-100 px-6 py-5 bg-white flex flex-wrap gap-2 justify-end"
+          v-if="!isEditing"
+        >
+          <button
+            type="button"
+            class="px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-sm transition border-none cursor-pointer"
+            @click="confirmDeleteRef"
+          >
+            Удалить
+          </button>
+          <button
+            type="button"
+            class="px-4 py-3 border border-slate-205 text-slate-600 rounded-xl bg-white hover:bg-slate-50 font-bold text-sm transition cursor-pointer"
+            data-bs-dismiss="modal"
+          >
+            Закрыть
+          </button>
+          <button
+            type="button"
+            class="flex-1 px-5 py-3 bg-indigo-650 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 border-none cursor-pointer"
+            @click="isEditing = true"
+          >
+            Изменить
+          </button>
+        </div>
+
+        <!-- Edit mode footer -->
         <div
           class="modal-footer border-t border-slate-100 px-6 py-5 bg-white flex gap-3"
+          v-else
         >
           <button
             type="button"
             class="flex-1 px-4 py-3 border border-slate-205 text-slate-600 rounded-xl bg-white hover:bg-slate-50 font-bold text-sm transition cursor-pointer"
-            data-bs-dismiss="modal"
+            @click="refForm.ID ? (isEditing = false) : hide()"
           >
             Отмена
           </button>
@@ -94,7 +130,7 @@
               v-if="isSaving"
               class="spinner-border spinner-border-sm text-white border-2"
             ></span>
-            <span>{{ refForm.ID ? "Обновить" : "Добавить" }}</span>
+            <span>{{ refForm.ID ? "Сохранить" : "Добавить" }}</span>
           </button>
         </div>
       </div>
@@ -112,6 +148,7 @@ export default {
       activeRefTab: "categories",
       refForm: {},
       isSaving: false,
+      isEditing: false,
       refMeta: {
         categories: {
           title: "Категория услуг",
@@ -182,13 +219,35 @@ export default {
       this.activeRefTab = refTab;
       if (item && item !== -1) {
         this.refForm = Object.assign({}, item);
+        this.isEditing = false;
       } else {
         this.refForm = {};
+        this.isEditing = true;
       }
       if (this.bsModal) this.bsModal.show();
     },
     hide() {
       if (this.bsModal) this.bsModal.hide();
+    },
+    async confirmDeleteRef() {
+      if (confirm("Вы действительно хотите удалить эту запись? Действие необратимо.")) {
+        try {
+          const sheet = this.refMeta[this.activeRefTab].sheet;
+          const stateKey = this.activeRefTab === 'categories' ? 'servicecategories' 
+                         : this.activeRefTab === 'globalservices' ? 'globalservices'
+                         : this.activeRefTab === 'brands' ? 'globalbrands'
+                         : 'globalmodels';
+          
+          if (this.store.db[stateKey]) {
+            this.store.db[stateKey] = this.store.db[stateKey].filter((x) => x.ID !== this.refForm.ID);
+          }
+          await this.store.dispatchSync("deleteRow", this.refForm.ID, sheet);
+          this.store.showToast("Запись удалена");
+          this.hide();
+        } catch (e) {
+          this.store.showToast(e.message, "error");
+        }
+      }
     },
     async saveRef() {
       try {

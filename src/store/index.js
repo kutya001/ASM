@@ -42,7 +42,8 @@ export const useMainStore = defineStore("main", {
         organizationmodels: [],
         globalbrands: [],
         globalmodels: [],
-        subscriptionlogs: []
+        subscriptionlogs: [],
+        supporttickets: []
       },
       syncQueue: [],
       isSyncing: false,
@@ -557,7 +558,8 @@ export const useMainStore = defineStore("main", {
         global_services: "globalservices",
         organization_brands: "organizationbrands",
         organization_models: "organizationmodels",
-        subscription_logs: "subscriptionlogs"
+        subscription_logs: "subscriptionlogs",
+        support_tickets: "supporttickets"
       };
 
       const FIELD_MAPS = {
@@ -570,6 +572,7 @@ export const useMainStore = defineStore("main", {
         game_records: { id: "ID", user_id: "UserID", username: "Username", game_id: "GameID", start_time: "StartTime", play_time: "PlayTime", score: "Score" },
         organizations: { id: "ID", name: "Name", subscription_ends_at: "SubscriptionEndsAt", max_users: "MaxUsers" },
         subscription_logs: { id: "ID", organization_id: "OrganizationID", start_date: "StartDate", end_date: "EndDate", max_users: "MaxUsers", amount: "Amount", created_at: "CreatedAt" },
+        support_tickets: { id: "ID", user_id: "UserID", organization_id: "OrganizationID", category: "Category", description: "Description", status: "Status", created_at: "CreatedAt" },
         service_categories: { id: "ID", name: "Name" },
         global_services: { id: "ID", category_id: "CategoryID", name: "Name", default_price: "DefaultPrice" },
         organization_brands: { organization_id: "OrganizationID", brand_id: "BrandID" },
