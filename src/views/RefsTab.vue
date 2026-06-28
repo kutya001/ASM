@@ -178,32 +178,46 @@
       <div v-if="activeOrgTab === 'services'" class="space-y-4">
         <div class="flex justify-between items-center px-1">
           <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Прайс-лист нашего СТО</div>
-          <div class="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full">
-            Всего: {{ db.services ? db.services.length : 0 }} услуг
+          
+          <div class="flex gap-2 items-center">
+            <button @click="expandAllCategories" class="h-6 px-2 bg-indigo-50 text-indigo-600 text-[9px] font-bold rounded-lg border-none hover:bg-indigo-100 transition cursor-pointer">
+              Развернуть всё
+            </button>
+            <button @click="collapseAllCategories" class="h-6 px-2 bg-slate-100 text-slate-600 text-[9px] font-bold rounded-lg border-none hover:bg-slate-200 transition cursor-pointer">
+              Свернуть всё
+            </button>
           </div>
         </div>
 
-        <!-- Grouped services list -->
-        <div class="space-y-4">
+        <!-- Grouped services list with Accordion -->
+        <div class="space-y-3">
           <div
             v-for="group in tenantGroupedServices"
             :key="group.category.ID"
-            class="border border-slate-200/50 rounded-2xl bg-slate-50/50 overflow-hidden shadow-sm"
+            class="border border-slate-200/50 rounded-2xl bg-slate-50/50 overflow-hidden shadow-sm transition-all"
           >
-            <div class="bg-slate-100/70 px-4 py-2.5 flex justify-between items-center border-b border-slate-200/50">
-              <span class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="bi bi-gear-wide-connected text-indigo-500"></i>
+            <!-- Category header (clickable) -->
+            <div
+              @click="toggleCategoryExpanded(group.category.ID)"
+              class="bg-slate-100/70 px-4 py-2.5 flex justify-between items-center border-b border-slate-200/50 cursor-pointer hover:bg-slate-100 transition"
+            >
+              <span class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                <span class="material-symbols-outlined text-[16px] text-indigo-500 transition-transform" :class="isCategoryExpanded(group.category.ID) ? 'rotate-90' : ''">
+                  chevron_right
+                </span>
                 {{ group.category.Name }}
               </span>
               <span class="text-[9px] text-indigo-600 font-bold uppercase bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-150/30">
                 {{ group.services.length }} усл.
               </span>
             </div>
-            <div class="divide-y divide-slate-100 bg-white">
+            
+            <!-- Category Services list -->
+            <div v-if="isCategoryExpanded(group.category.ID)" class="divide-y divide-slate-100 bg-white animate-fade-in">
               <div
                 v-for="s in group.services"
                 :key="s.ID"
-                class="px-4 py-2.5 flex justify-between items-center hover:bg-slate-50/60 transition group animate-fade-in"
+                class="px-4 py-2.5 flex justify-between items-center hover:bg-slate-50/60 transition group"
               >
                 <div class="space-y-0.5">
                   <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -227,94 +241,130 @@
             </div>
           </div>
           <div v-if="tenantGroupedServices.length === 0" class="bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
-             Ваш прайс-лист пока пуст. Нажмите кнопку «плюс» внизу экрана, чтобы импортировать готовые шаблоны услуг или создать свои.
+             Ваш прайс-лист пока пуст. Нажмите круглую кнопку «плюс» внизу экрана, чтобы импортировать готовые шаблоны услуг или добавить свои.
           </div>
         </div>
       </div>
 
-      <!-- Cars Configuration for Tenant -->
+      <!-- Cars Configuration for Tenant (Accordion List) -->
       <div v-if="activeOrgTab === 'cars'" class="space-y-4">
-        <div class="bg-amber-950/40 border border-amber-500/20 text-amber-300 rounded-xl p-3.5 text-xs font-semibold leading-relaxed">
-          💡 Отметьте галочками марки и модели автомобилей, которые обслуживает ваше СТО. Они будут доступны вашим мастерам при создании новых заказ-нарядов.
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Brands Checklist -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
-            <div class="flex justify-between items-center">
-              <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">1. Выберите марки авто</h3>
-              <div class="flex gap-2">
-                <button @click="selectAllBrands" class="h-6 px-2 bg-indigo-50 text-indigo-600 text-[9px] font-bold rounded-lg border-none hover:bg-indigo-100 transition cursor-pointer">
-                  Все
-                </button>
-                <button @click="clearAllBrands" class="h-6 px-2 bg-red-50 text-red-600 text-[9px] font-bold rounded-lg border-none hover:bg-red-105 transition cursor-pointer">
-                  Сбросить
-                </button>
-              </div>
+        <!-- Controls bar -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+          <div class="flex flex-col sm:flex-row justify-between gap-3">
+            <div class="flex flex-wrap gap-2 items-center">
+              <button @click="expandAllBrands" class="h-8 px-3 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-xl border-none hover:bg-indigo-100 transition cursor-pointer">
+                Развернуть все марки
+              </button>
+              <button @click="collapseAllBrands" class="h-8 px-3 bg-slate-100 text-slate-650 text-xs font-bold rounded-xl border-none hover:bg-slate-200 transition cursor-pointer">
+                Свернуть все
+              </button>
+              <button @click="selectAllBrands" class="h-8 px-3 bg-indigo-600 text-white text-xs font-bold rounded-xl border-none hover:bg-indigo-700 transition cursor-pointer">
+                Выбрать все авто
+              </button>
+              <button @click="clearAllBrands" class="h-8 px-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border-none hover:bg-red-100 transition cursor-pointer">
+                Сбросить всё
+              </button>
             </div>
-
-            <!-- Beautiful Brand grid layout -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[350px] overflow-y-auto pr-1">
-              <div
-                v-for="b in db.globalbrands"
-                :key="b.ID"
-                @click="toggleOrgBrand(b.ID)"
-                class="border border-slate-250/70 rounded-xl p-2.5 flex items-center justify-between cursor-pointer hover:border-indigo-400 transition"
-                :class="isOrgBrandActive(b.ID) ? 'bg-indigo-50/50 border-indigo-500' : 'bg-slate-50'"
-              >
-                <span class="text-xs font-bold" :class="isOrgBrandActive(b.ID) ? 'text-indigo-700' : 'text-slate-700'">{{ b.Name }}</span>
+            <div class="flex items-center gap-3">
+              <!-- Filter Active Cars Only -->
+              <label class="flex items-center gap-2 cursor-pointer text-xs font-black text-slate-500 uppercase tracking-wider">
                 <input
                   type="checkbox"
-                  :checked="isOrgBrandActive(b.ID)"
-                  @click.stop="toggleOrgBrand(b.ID)"
-                  class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-350 focus:ring-indigo-500 cursor-pointer"
+                  v-model="onlyOurCars"
+                  class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
                 />
-              </div>
+                Только наши авто
+              </label>
             </div>
           </div>
 
-          <!-- Models Checklist (dependent on selected brand) -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3 flex flex-col">
-            <div class="flex justify-between items-center">
-              <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest m-0">2. Выберите модели марки</h3>
-              <div v-if="selectedConfigBrandId" class="flex gap-2">
-                <button @click="selectAllModels" class="h-6 px-2 bg-indigo-50 text-indigo-600 text-[9px] font-bold rounded-lg border-none hover:bg-indigo-100 transition cursor-pointer">
-                  Все модели
-                </button>
-                <button @click="clearAllModels" class="h-6 px-2 bg-red-50 text-red-600 text-[9px] font-bold rounded-lg border-none hover:bg-red-105 transition cursor-pointer">
-                  Сбросить
-                </button>
-              </div>
-            </div>
-            
-            <select v-model="selectedConfigBrandId" class="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-700 cursor-pointer">
-              <option value="" disabled>-- Выберите марку для настройки моделей --</option>
-              <option v-for="b in activeOrgBrands" :key="b.ID" :value="b.ID">{{ b.Name }}</option>
-            </select>
+          <!-- Search filter for car models/brands -->
+          <div class="relative w-full">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+              <span class="material-symbols-outlined text-[18px]">search</span>
+            </span>
+            <input
+              type="text"
+              v-model="carSearchQuery"
+              class="w-full h-10 pl-9 pr-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500"
+              placeholder="Поиск по маркам и моделям..."
+            />
+          </div>
+        </div>
 
-            <div v-if="selectedConfigBrandId" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1 flex-1 mt-2">
-              <div
-                v-for="m in brandModels(selectedConfigBrandId)"
-                :key="m.ID"
-                @click="toggleOrgModel(m.ID)"
-                class="border border-slate-250/70 rounded-xl p-2.5 flex items-center justify-between cursor-pointer hover:border-indigo-400 transition"
-                :class="isOrgModelActive(m.ID) ? 'bg-indigo-50/50 border-indigo-500' : 'bg-slate-50'"
-              >
-                <span class="text-xs font-bold" :class="isOrgModelActive(m.ID) ? 'text-indigo-700' : 'text-slate-700'">{{ m.Name }}</span>
+        <!-- Dynamic Brand and Model Trees -->
+        <div class="space-y-3">
+          <div
+            v-for="b in filteredGlobalBrands"
+            :key="b.ID"
+            class="border border-slate-200/60 bg-white rounded-2xl overflow-hidden shadow-sm transition"
+          >
+            <!-- Brand header -->
+            <div
+              class="px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition cursor-pointer"
+              @click="toggleBrandExpanded(b.ID)"
+            >
+              <div class="flex items-center gap-3.5" @click.stop>
+                <!-- Toggle arrow -->
+                <span class="material-symbols-outlined text-[18px] text-slate-400 transition-transform cursor-pointer" @click="toggleBrandExpanded(b.ID)">
+                  {{ isBrandExpanded(b.ID) ? 'expand_more' : 'chevron_right' }}
+                </span>
+                
+                <!-- Brand Checkbox -->
                 <input
                   type="checkbox"
-                  :checked="isOrgModelActive(m.ID)"
-                  @click.stop="toggleOrgModel(m.ID)"
-                  class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-350 focus:ring-indigo-500 cursor-pointer"
+                  :checked="isOrgBrandActive(b.ID)"
+                  @change="toggleOrgBrandWithModels(b.ID)"
+                  class="w-4 h-4 rounded text-indigo-600 border-slate-350 focus:ring-indigo-500 cursor-pointer"
                 />
+                
+                <span class="text-xs font-black text-slate-850 uppercase tracking-wider">{{ b.Name }}</span>
               </div>
-              <div v-if="brandModels(selectedConfigBrandId).length === 0" class="col-span-2 py-6 text-center text-slate-400 font-bold text-xs">
-                У этой марки нет зарегистрированных моделей в шаблонах.
+              
+              <div class="flex items-center gap-3">
+                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full" :class="isOrgBrandActive(b.ID) ? 'bg-indigo-50 text-indigo-600 border border-indigo-150/30' : 'bg-slate-100 text-slate-400'">
+                  Выбрано моделей: {{ countActiveBrandModels(b.ID) }} / {{ brandModels(b.ID).length }}
+                </span>
               </div>
             </div>
-            <div v-else class="flex-1 py-12 text-center text-slate-400 font-bold text-xs">
-              Выберите активную марку в выпадающем списке сверху, чтобы настроить её модели.
+
+            <!-- Models list container (renders if expanded) -->
+            <div v-if="isBrandExpanded(b.ID)" class="px-5 py-3.5 bg-slate-50/60 border-t border-slate-100 animate-fade-in">
+              <!-- Select/deselect all for this brand -->
+              <div class="flex gap-2.5 mb-3">
+                <button @click="selectAllBrandModels(b.ID)" class="h-6 px-2.5 bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase rounded-lg border-none hover:bg-indigo-100 transition cursor-pointer">
+                  Выбрать все модели марки
+                </button>
+                <button @click="clearAllBrandModels(b.ID)" class="h-6 px-2.5 bg-red-50 text-red-650 text-[9px] font-black uppercase rounded-lg border-none hover:bg-red-100 transition cursor-pointer">
+                  Снять все модели
+                </button>
+              </div>
+
+              <!-- Models grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div
+                  v-for="m in filteredBrandModels(b.ID)"
+                  :key="m.ID"
+                  @click="toggleOrgModel(m.ID)"
+                  class="border border-slate-200 rounded-xl p-2.5 flex items-center justify-between cursor-pointer hover:border-indigo-400 transition"
+                  :class="isOrgModelActive(m.ID) ? 'bg-indigo-50/40 border-indigo-450' : 'bg-white'"
+                >
+                  <span class="text-xs font-semibold" :class="isOrgModelActive(m.ID) ? 'text-indigo-700' : 'text-slate-700'">{{ m.Name }}</span>
+                  <input
+                    type="checkbox"
+                    :checked="isOrgModelActive(m.ID)"
+                    @click.stop="toggleOrgModel(m.ID)"
+                    class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-350 focus:ring-indigo-500 cursor-pointer"
+                  />
+                </div>
+                <div v-if="brandModels(b.ID).length === 0" class="col-span-3 py-4 text-center text-slate-400 font-bold text-xs italic">
+                  Нет моделей
+                </div>
+              </div>
             </div>
+          </div>
+          <div v-if="filteredGlobalBrands.length === 0" class="bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
+            По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска или фильтр «Только наши авто».
           </div>
         </div>
       </div>
@@ -519,6 +569,29 @@ export default {
           services: services.filter(s => s.CategoryID === cat.ID)
         };
       }).filter(group => group.services.length > 0);
+    },
+    filteredGlobalBrands() {
+      let list = this.db.globalbrands || [];
+      
+      // Filter by 'Only our cars'
+      if (this.onlyOurCars) {
+        const activeBrandIds = (this.db.organizationbrands || [])
+          .filter(ob => String(ob.OrganizationID) === String(this.store.user.OrganizationID))
+          .map(ob => ob.BrandID);
+        list = list.filter(b => activeBrandIds.includes(b.ID));
+      }
+      
+      // Filter by search query
+      if (this.carSearchQuery) {
+        const q = this.carSearchQuery.toLowerCase().trim();
+        list = list.filter(b => {
+          const brandMatch = String(b.Name || "").toLowerCase().includes(q);
+          const modelsMatch = this.brandModels(b.ID).some(m => String(m.Name || "").toLowerCase().includes(q));
+          return brandMatch || modelsMatch;
+        });
+      }
+      
+      return list;
     }
   },
   data() {
@@ -542,7 +615,12 @@ export default {
         CategoryID: '',
         Name: '',
         Price: 0
-      }
+      },
+      // Accordion states
+      expandedCategories: [],
+      expandedBrands: [],
+      onlyOurCars: false,
+      carSearchQuery: ''
     };
   },
   watch: {
@@ -553,6 +631,34 @@ export default {
             this.templatePrices[gs.ID] = gs.DefaultPrice;
           }
         });
+      }
+    },
+    // Auto-expand brands matching search query
+    carSearchQuery(newQuery) {
+      if (newQuery) {
+        const q = newQuery.toLowerCase().trim();
+        const matchingBrandIds = (this.db.globalbrands || [])
+          .filter(b => {
+            const brandMatch = String(b.Name || "").toLowerCase().includes(q);
+            const modelsMatch = this.brandModels(b.ID).some(m => String(m.Name || "").toLowerCase().includes(q));
+            return brandMatch || modelsMatch;
+          })
+          .map(b => b.ID);
+        
+        matchingBrandIds.forEach(id => {
+          if (!this.expandedBrands.includes(id)) {
+            this.expandedBrands.push(id);
+          }
+        });
+      }
+    },
+    db: {
+      immediate: true,
+      handler(newDb) {
+        // Expand all categories by default when db loads
+        if (newDb && newDb.servicecategories && this.expandedCategories.length === 0) {
+          this.expandedCategories = newDb.servicecategories.map(c => c.ID);
+        }
       }
     }
   },
@@ -580,10 +686,52 @@ export default {
       } else {
         if (this.activeOrgTab === 'services') {
           this.showFABMenu = !this.showFABMenu;
-        } else {
-          this.store.showToast('Для настройки марок используйте сетку чекбоксов выше.');
         }
       }
+    },
+
+    // Accordion categories helpers
+    isCategoryExpanded(catId) {
+      return this.expandedCategories.includes(catId);
+    },
+    toggleCategoryExpanded(catId) {
+      const idx = this.expandedCategories.indexOf(catId);
+      if (idx > -1) {
+        this.expandedCategories.splice(idx, 1);
+      } else {
+        this.expandedCategories.push(catId);
+      }
+    },
+    expandAllCategories() {
+      this.expandedCategories = (this.db.servicecategories || []).map(c => c.ID);
+    },
+    collapseAllCategories() {
+      this.expandedCategories = [];
+    },
+
+    // Accordion brands helpers
+    isBrandExpanded(brandId) {
+      return this.expandedBrands.includes(brandId);
+    },
+    toggleBrandExpanded(brandId) {
+      const idx = this.expandedBrands.indexOf(brandId);
+      if (idx > -1) {
+        this.expandedBrands.splice(idx, 1);
+      } else {
+        this.expandedBrands.push(brandId);
+      }
+    },
+    expandAllBrands() {
+      this.expandedBrands = (this.db.globalbrands || []).map(b => b.ID);
+    },
+    collapseAllBrands() {
+      this.expandedBrands = [];
+    },
+    countActiveBrandModels(brandId) {
+      const activeModelIds = (this.db.organizationmodels || [])
+        .filter(om => String(om.OrganizationID) === String(this.store.user.OrganizationID))
+        .map(om => om.ModelID);
+      return this.brandModels(brandId).filter(m => activeModelIds.includes(m.ID)).length;
     },
 
     // Org Services Template methods
@@ -704,41 +852,98 @@ export default {
         om => String(om.OrganizationID) === String(this.store.user.OrganizationID) && String(om.ModelID) === String(modelId)
       );
     },
-    toggleOrgBrand(brandId) {
+    toggleOrgBrandWithModels(brandId) {
       const orgId = this.store.user.OrganizationID;
       const active = this.isOrgBrandActive(brandId);
+      
       if (active) {
+        // Remove brand
         this.store.dispatchSync('deleteRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
-        if (String(this.selectedConfigBrandId) === String(brandId)) {
-          this.selectedConfigBrandId = '';
-        }
+        
+        // Remove all models of this brand
+        const modelsOfBrand = this.brandModels(brandId);
+        modelsOfBrand.forEach(m => {
+          if (this.isOrgModelActive(m.ID)) {
+            this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: m.ID }, 'OrganizationModels');
+          }
+        });
+        this.store.showToast('Марка и связанные модели отключены');
       } else {
+        // Add brand
         this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
+        
+        // Add all models of this brand automatically
+        const modelsOfBrand = this.brandModels(brandId);
+        const newModelObjs = modelsOfBrand.map(m => ({
+          OrganizationID: orgId,
+          ModelID: m.ID
+        }));
+        if (newModelObjs.length > 0) {
+          this.store.dispatchSync('addRows', newModelObjs, 'OrganizationModels');
+        }
+        this.store.showToast('Марка и все её модели подключены');
       }
     },
     toggleOrgModel(modelId) {
       const orgId = this.store.user.OrganizationID;
       const active = this.isOrgModelActive(modelId);
+      
+      // Find what brand this model belongs to
+      const modelObj = (this.db.globalmodels || []).find(m => m.ID === modelId);
+      if (!modelObj) return;
+      const brandId = modelObj.BrandID;
+      
       if (active) {
         this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: modelId }, 'OrganizationModels');
       } else {
+        // If brand is not active yet, activate it automatically!
+        if (!this.isOrgBrandActive(brandId)) {
+          this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
+        }
         this.store.dispatchSync('addRow', { OrganizationID: orgId, ModelID: modelId }, 'OrganizationModels');
       }
     },
     brandModels(brandId) {
       return (this.db.globalmodels || []).filter(m => String(m.BrandID) === String(brandId));
     },
+    filteredBrandModels(brandId) {
+      const list = this.brandModels(brandId);
+      if (this.carSearchQuery) {
+        const q = this.carSearchQuery.toLowerCase().trim();
+        return list.filter(m => String(m.Name || "").toLowerCase().includes(q));
+      }
+      return list;
+    },
     selectAllBrands() {
       const orgId = this.store.user.OrganizationID;
-      const unselected = (this.db.globalbrands || []).filter(b => !this.isOrgBrandActive(b.ID));
-      if (unselected.length === 0) return this.store.showToast('Все марки уже выбраны');
+      const unselectedBrands = (this.db.globalbrands || []).filter(b => !this.isOrgBrandActive(b.ID));
+      if (unselectedBrands.length === 0) return this.store.showToast('Все марки уже выбраны');
 
-      const objects = unselected.map(b => ({
+      // Select all brands
+      const brandObjs = unselectedBrands.map(b => ({
         OrganizationID: orgId,
         BrandID: b.ID
       }));
-      this.store.dispatchSync('addRows', objects, 'OrganizationBrands');
-      this.store.showToast(`Выбрано марок: ${objects.length}`);
+      this.store.dispatchSync('addRows', brandObjs, 'OrganizationBrands');
+
+      // Select all models
+      const modelObjs = [];
+      (this.db.globalbrands || []).forEach(b => {
+        const modelsOfBrand = this.brandModels(b.ID);
+        modelsOfBrand.forEach(m => {
+          if (!this.isOrgModelActive(m.ID)) {
+            modelObjs.push({
+              OrganizationID: orgId,
+              ModelID: m.ID
+            });
+          }
+        });
+      });
+      if (modelObjs.length > 0) {
+        this.store.dispatchSync('addRows', modelObjs, 'OrganizationModels');
+      }
+
+      this.store.showToast('Подключены все марки и модели авто');
     },
     clearAllBrands() {
       if (confirm('Сбросить выбор всех марок и моделей? Ваши мастера не смогут выбрать автомобили, пока вы не отметите их заново.')) {
@@ -749,24 +954,27 @@ export default {
         this.store.showToast('Выбор сброшен');
       }
     },
-    selectAllModels() {
-      if (!this.selectedConfigBrandId) return;
+    selectAllBrandModels(brandId) {
       const orgId = this.store.user.OrganizationID;
-      const models = this.brandModels(this.selectedConfigBrandId);
+      const models = this.brandModels(brandId);
       const unselected = models.filter(m => !this.isOrgModelActive(m.ID));
       if (unselected.length === 0) return this.store.showToast('Все модели этой марки уже выбраны');
+
+      // Ensure brand is active
+      if (!this.isOrgBrandActive(brandId)) {
+        this.store.dispatchSync('addRow', { OrganizationID: orgId, BrandID: brandId }, 'OrganizationBrands');
+      }
 
       const objects = unselected.map(m => ({
         OrganizationID: orgId,
         ModelID: m.ID
       }));
       this.store.dispatchSync('addRows', objects, 'OrganizationModels');
-      this.store.showToast(`Выбрано моделей: ${objects.length}`);
+      this.store.showToast(`Подключено моделей: ${objects.length}`);
     },
-    clearAllModels() {
-      if (!this.selectedConfigBrandId) return;
+    clearAllBrandModels(brandId) {
       const orgId = this.store.user.OrganizationID;
-      const models = this.brandModels(this.selectedConfigBrandId);
+      const models = this.brandModels(brandId);
       const activeModels = (this.db.organizationmodels || []).filter(
         om => String(om.OrganizationID) === String(orgId) && models.some(m => String(m.ID) === String(om.ModelID))
       );
@@ -775,7 +983,7 @@ export default {
       activeModels.forEach(om => {
         this.store.dispatchSync('deleteRow', { OrganizationID: orgId, ModelID: om.ModelID }, 'OrganizationModels');
       });
-      this.store.showToast('Выбор моделей сброшен');
+      this.store.showToast('Модели марки отключены');
     }
   }
 }

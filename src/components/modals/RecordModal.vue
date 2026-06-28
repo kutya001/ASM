@@ -1145,7 +1145,7 @@ export default {
         }
       } else {
         this.applicationRef = null;
-        if (record) {
+        if (record && record !== -1) {
           this.isEditingRecord = false;
           this.recordForm = JSON.parse(JSON.stringify(record));
           this.recordForm.ServicesJSON = this.recordForm.ServicesJSON || [];

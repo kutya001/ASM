@@ -354,7 +354,10 @@ export default {
     },
     showFAB() {
       if (!this.user) return false;
-      if (this.activeTab === 'refs' && this.user.Role === 'Master') return false;
+      if (this.activeTab === 'refs') {
+        if (this.user.Role === 'Master') return false;
+        if (this.$refs.refsTab && this.$refs.refsTab.activeOrgTab === 'cars') return false;
+      }
       return ["records", "refs", "users"].includes(this.activeTab);
     }
   },
