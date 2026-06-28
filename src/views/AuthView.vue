@@ -513,7 +513,7 @@
             <input
               v-model="authForm.username"
               type="text"
-              class="w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-100 placeholder-slate-500"
+              class="auth-input w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-100 placeholder-slate-500"
               placeholder="Введите ваш логин"
             />
           </div>
@@ -527,7 +527,7 @@
             <input
               v-model="authForm.password"
               type="password"
-              class="w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-100 placeholder-slate-500"
+              class="auth-input w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-100 placeholder-slate-500"
               placeholder="••••••••"
               @keyup.enter="handleAuth"
             />
@@ -590,7 +590,7 @@
                 <input
                   v-model="newOrgName"
                   type="text"
-                  class="w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-100 placeholder-slate-500"
+                  class="auth-input w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition font-semibold text-slate-100 placeholder-slate-500"
                   placeholder="Название нового автосервиса"
                 />
               </div>
@@ -767,5 +767,18 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Auth Input Styling Isolation to prevent white background focus overrides */
+.auth-input {
+  color: #f1f5f9 !important;
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+}
+.auth-input:focus {
+  background-color: #0f172a !important;
+  border-color: #6366f1 !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
 }
 </style>
