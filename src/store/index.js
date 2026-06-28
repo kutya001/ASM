@@ -70,6 +70,9 @@ export const useMainStore = defineStore("main", {
     },
     sortedBrands() {
       let b = this.db.brands || [];
+      if (b.length === 0 && this.db.globalbrands && this.db.globalbrands.length > 0) {
+        b = this.db.globalbrands;
+      }
       const uniqueNames = new Set();
       const bUnique = b.filter(item => {
           const name = String(item.Name || "").toLowerCase().trim();

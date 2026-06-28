@@ -955,7 +955,9 @@ export default {
     availableModels() {
       let bId = this.recordForm.BrandID;
       if (!bId) return [];
-      let models = this.store.db.models.filter((m) => m && m.BrandID === bId);
+      const isCustomListEmpty = (this.store.db.brands || []).length === 0;
+      const modelSource = isCustomListEmpty ? (this.store.db.globalmodels || []) : (this.store.db.models || []);
+      let models = modelSource.filter((m) => m && m.BrandID === bId);
       return [...models].sort((x, y) =>
         String(x.Name || "")
           .toLowerCase()

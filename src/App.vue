@@ -115,6 +115,7 @@
 
           <RefsTab
             v-if="activeTab === 'refs' && user.Role !== 'Master'"
+            ref="refsTab"
             :db="db"
             :grouped-models="groupedModels"
             :get-brand-name="getBrandName"
@@ -164,6 +165,16 @@
     <RefModal ref="refModal" />
     <BulkUploadModal ref="bulkModal" />
     <GameContainer />
+
+    <!-- Floating Action Button (FAB) for ergonomics -->
+    <button
+      v-if="showFAB"
+      @click="handleFABClick"
+      class="fixed bottom-24 right-6 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow-2xl shadow-indigo-600/35 border-none cursor-pointer active:scale-95 transition-all"
+      id="app-mobile-fab"
+    >
+      <span class="material-symbols-outlined text-[26px]">add</span>
+    </button>
   </div>
 </template>
 
@@ -341,6 +352,11 @@ export default {
       }
       return result;
     },
+    showFAB() {
+      if (!this.user) return false;
+      if (this.activeTab === 'refs' && this.user.Role === 'Master') return false;
+      return ["records", "refs", "users"].includes(this.activeTab);
+    }
   },
   mounted() {
     this.loadWelcomeScreenInfo();
@@ -580,6 +596,17 @@ export default {
         this.$refs.userConfigModal.open(u);
       }
     },
+    handleFABClick() {
+      if (this.activeTab === "records") {
+        this.openRecordModal(-1);
+      } else if (this.activeTab === "refs") {
+        if (this.$refs.refsTab) {
+          this.$refs.refsTab.handleFABAction();
+        }
+      } else if (this.activeTab === "users") {
+        this.openUserConfigModal(-1);
+      }
+    }
   },
 };
 </script>
