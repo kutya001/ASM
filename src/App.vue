@@ -50,8 +50,8 @@
           <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Организация</div>
           <div class="text-xs font-black text-slate-850">{{ userOrganizationName }}</div>
         </div>
-        <span class="text-[9px] font-black uppercase bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full border border-rose-150/30">
-          Истекла
+        <span class="text-[9px] font-black uppercase bg-rose-50 text-rose-600 px-2.5 py-0.5 rounded-full border border-rose-150/30">
+          {{ subscriptionRemainingText }}
         </span>
       </div>
 
@@ -234,6 +234,7 @@
 <script>
 import { mapState, mapActions } from "pinia";
 import { useMainStore } from "./store";
+import { getSubscriptionDaysLeft } from "./utils/helpers";
 
 import ProfileModal from "./components/modals/ProfileModal.vue";
 import RecordModal from "./components/modals/RecordModal.vue";
@@ -338,6 +339,13 @@ export default {
       const orgName = this.userOrganizationName || '';
       const text = encodeURIComponent(`Здравствуйте! Отправляю чек для продления подписки организации ${orgName}.`);
       return `https://wa.me/996500888268?text=${text}`;
+    },
+    subscriptionRemainingText() {
+      if (!this.user) return '';
+      const org = (this.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
+      if (!org) return 'не оплачена';
+      const info = getSubscriptionDaysLeft(org.SubscriptionEndsAt);
+      return info.text;
     },
     filteredRecords() {
       let d = [...this.db.records].sort(

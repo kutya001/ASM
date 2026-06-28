@@ -107,3 +107,28 @@ export function generateUUID() {
   });
 }
 
+export function getSubscriptionDaysLeft(endsAtString) {
+  if (!endsAtString) return { text: "не оплачена", days: 0, status: "expired" };
+  try {
+    const ends = new Date(endsAtString);
+    if (isNaN(ends.getTime())) {
+      return { text: "не оплачена", days: 0, status: "expired" };
+    }
+    const now = new Date();
+    const diffMs = ends - now;
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMs > 0) {
+      return { text: `осталось ${diffDays} дн.`, days: diffDays, status: "active" };
+    } else {
+      const expiredDays = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60 * 24));
+      if (expiredDays === 0) {
+        return { text: "истекла сегодня", days: 0, status: "expired" };
+      }
+      return { text: `истекла ${expiredDays} дн. назад`, days: -expiredDays, status: "expired" };
+    }
+  } catch (e) {
+    return { text: "не оплачена", days: 0, status: "expired" };
+  }
+}
+

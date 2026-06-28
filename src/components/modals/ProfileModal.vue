@@ -273,7 +273,7 @@
 <script>
 import { useMainStore } from "../../store";
 import { updateUserProfile } from "../../services/api";
-import { formatPhoneInput } from "../../utils/helpers";
+import { formatPhoneInput, getSubscriptionDaysLeft } from "../../utils/helpers";
 
 export default {
   emits: ["logout", "reopen-welcome"],
@@ -307,15 +307,20 @@ export default {
     subEndsDateText() {
       if (!this.user) return "";
       const org = (this.store.db.organizations || []).find(o => String(o.ID) === String(this.user.OrganizationID));
-      if (!org || !org.SubscriptionEndsAt) return "Не оплачена";
-      const d = new Date(org.SubscriptionEndsAt);
+      if (!org) return "не оплачена";
+      
+      const d = org.SubscriptionEndsAt ? new Date(org.SubscriptionEndsAt) : null;
+      if (!d) return "не оплачена";
+      
       const dd = String(d.getDate()).padStart(2, "0");
       const mm = String(d.getMonth() + 1).padStart(2, "0");
       const yyyy = d.getFullYear();
-      const formatted = `${dd}.${mm}.${yyyy}`;
+      const dateStr = `${dd}.${mm}.${yyyy}`;
+      
+      const info = getSubscriptionDaysLeft(org.SubscriptionEndsAt);
       return new Date(org.SubscriptionEndsAt) > new Date()
-        ? `Действует до ${formatted}`
-        : `Истекла ${formatted}`;
+        ? `Действует до ${dateStr} (${info.text})`
+        : `Истекла ${dateStr} (${info.text})`;
     },
     whatsappPayLink() {
       const orgName = this.userOrgName || "";

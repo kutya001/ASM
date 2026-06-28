@@ -76,14 +76,14 @@
                 class="inline-flex items-center gap-0.5 text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-lg border border-emerald-200"
               >
                 <span class="material-symbols-outlined text-[11px]">check_circle</span>
-                До {{ formatSubDate(org.SubscriptionEndsAt) }}
+                До {{ formatSubDate(org.SubscriptionEndsAt) }} ({{ getOrgSubStatusText(org) }})
               </span>
               <span
                 v-else
                 class="inline-flex items-center gap-0.5 text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-lg border border-rose-250"
               >
                 <span class="material-symbols-outlined text-[11px]">cancel</span>
-                Истекла ({{ org.SubscriptionEndsAt ? formatSubDate(org.SubscriptionEndsAt) : 'не оплачена' }})
+                {{ org.SubscriptionEndsAt ? `Истекла ${formatSubDate(org.SubscriptionEndsAt)} (${getOrgSubStatusText(org)})` : 'не оплачена' }}
               </span>
             </div>
           </div>
@@ -219,6 +219,7 @@
 
 <script>
 import { useMainStore } from "../store";
+import { getSubscriptionDaysLeft } from "../utils/helpers";
 
 export default {
   name: "OrganizationsTab",
@@ -278,6 +279,9 @@ export default {
       if (!org.SubscriptionEndsAt) return false;
       return new Date(org.SubscriptionEndsAt) > new Date();
     },
+    getOrgSubStatusText(org) {
+      return getSubscriptionDaysLeft(org.SubscriptionEndsAt).text;
+    },
     formatSubDate(dateStr) {
       if (!dateStr) return "—";
       const d = new Date(dateStr);
@@ -292,9 +296,9 @@ export default {
         if (org.SubscriptionEndsAt) {
           dateStr = new Date(org.SubscriptionEndsAt).toISOString().split('T')[0];
         } else {
-          // Default to exactly 1 month from now
+          // Default to exactly 3 days from now
           const d = new Date();
-          d.setMonth(d.getMonth() + 1);
+          d.setDate(d.getDate() + 3);
           dateStr = d.toISOString().split('T')[0];
         }
         this.orgForm = {
@@ -304,7 +308,7 @@ export default {
         };
       } else {
         const d = new Date();
-        d.setMonth(d.getMonth() + 1);
+        d.setDate(d.getDate() + 3);
         this.orgForm = {
           ID: "",
           Name: "",
