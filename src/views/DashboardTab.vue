@@ -82,8 +82,8 @@
                 </button>
               </div>
 
-              <!-- Swipeable Quick-Filters (Master & Service Chips) -->
-              <div class="space-y-3" id="mobile-quick-filters">
+              <!-- Filter inputs grid -->
+              <div class="space-y-3">
                 <!-- Organization Selector for Superadmin -->
                 <div v-if="user.Role === 'Superadmin' && db.organizations && db.organizations.length > 0" class="flex flex-col gap-1">
                   <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left">Организация:</span>
@@ -120,83 +120,78 @@
                   </div>
                 </div>
 
-                <!-- Master Chips -->
-                <div v-if="user.Role !== 'Master'" class="flex flex-col gap-1">
-                  <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left">Мастер:</span>
-                  <div class="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none px-1 -mx-1">
-                    <button
-                      @click="dashFilterMaster = ''"
-                      class="px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap transition-all border shrink-0 outline-none flex items-center gap-1 cursor-pointer"
-                      :class="
-                        dashFilterMaster === ''
-                          ? 'bg-indigo-600 text-white border-transparent shadow-xs'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      "
+                <!-- Master & Service Selectors on the same level -->
+                <div class="grid grid-cols-2 gap-3">
+                  <!-- Master Selector -->
+                  <div v-if="user.Role !== 'Master'" class="flex flex-col gap-1 text-left">
+                    <span class="text-[8px] font-bold text-slate-450 uppercase tracking-wider ml-1">Мастер:</span>
+                    <select
+                      v-model="dashFilterMaster"
+                      class="h-9 px-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-700 cursor-pointer w-full focus:border-indigo-500 transition"
                     >
-                      <span>Все мастера</span>
+                      <option value="">Все мастера</option>
+                      <option v-for="m in visibleMastersList" :key="m.ID" :value="m.ID">
+                        {{ m.Name || m.Username }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Service Selector -->
+                  <div class="flex flex-col gap-1 text-left" :class="user.Role === 'Master' ? 'col-span-2' : ''">
+                    <span class="text-[8px] font-bold text-slate-450 uppercase tracking-wider ml-1">Услуга:</span>
+                    <select
+                      v-model="dashFilterService"
+                      class="h-9 px-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-700 cursor-pointer w-full focus:border-indigo-500 transition"
+                    >
+                      <option value="">Все услуги</option>
+                      <option v-for="s in visibleServicesList" :key="s.ID" :value="s.ID">
+                        {{ s.Name }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Date Type Selector (Check-in vs Checkout Date Toggle) -->
+                <div class="flex flex-col gap-1 text-left">
+                  <span class="text-[8px] font-bold text-slate-450 uppercase tracking-wider ml-1">Тип даты для отчета:</span>
+                  <div class="flex p-0.5 bg-slate-100 border border-slate-200 rounded-xl">
+                    <button
+                      type="button"
+                      @click="dashDateType = 'checkout'"
+                      class="flex-1 py-1 rounded-[8px] text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border-0"
+                      :class="dashDateType === 'checkout' ? 'bg-white text-indigo-600 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'"
+                    >
+                      По дате выезда (основной)
                     </button>
                     <button
-                      v-for="m in visibleMastersList"
-                      :key="m.ID"
-                      @click="
-                        dashFilterMaster =
-                          String(dashFilterMaster) === String(m.ID) ? '' : m.ID
-                      "
-                      class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-all border shrink-0 outline-none flex items-center gap-1 cursor-pointer"
-                      :class="
-                        String(dashFilterMaster) === String(m.ID)
-                          ? 'bg-indigo-600 text-white border-transparent shadow-xs'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      "
+                      type="button"
+                      @click="dashDateType = 'checkin'"
+                      class="flex-1 py-1 rounded-[8px] text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border-0"
+                      :class="dashDateType === 'checkin' ? 'bg-white text-indigo-600 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'"
                     >
-                      <span>{{ m.Name || m.Username }}</span>
+                      По дате заезда
                     </button>
                   </div>
                 </div>
 
-                <!-- Service Chips -->
-                <div class="flex flex-col gap-1">
-                  <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left">Услуга:</span>
-                  <div class="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none px-1 -mx-1">
-                    <button
-                      @click="dashFilterService = ''"
-                      class="px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap transition-all border shrink-0 outline-none flex items-center gap-1 cursor-pointer"
-                      :class="
-                        dashFilterService === ''
-                          ? 'bg-indigo-600 text-white border-transparent shadow-xs'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      "
-                    >
-                      <span>Все услуги</span>
-                    </button>
-                    <button
-                      v-for="s in visibleServicesList"
-                      :key="s.ID"
-                      @click="
-                        dashFilterService =
-                          String(dashFilterService) === String(s.ID) ? '' : s.ID
-                      "
-                      class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-all border shrink-0 outline-none flex items-center gap-1 cursor-pointer"
-                      :class="
-                        String(dashFilterService) === String(s.ID)
-                          ? 'bg-indigo-600 text-white border-transparent shadow-xs'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      "
-                    >
-                      <span>{{ s.Name }}</span>
-                    </button>
+                <!-- Date Range (From and To on the same level) -->
+                <div class="grid grid-cols-2 gap-3 text-left">
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[8px] font-bold text-slate-450 uppercase tracking-wider ml-1">Дата от:</span>
+                    <input
+                      type="date"
+                      v-model="dashDateFrom"
+                      class="h-9 px-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/15 transition-all"
+                    />
                   </div>
-                </div>
-
-                <!-- Date Filter Input -->
-                <div class="flex flex-col gap-1">
-                  <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-left">Точная дата заезда:</span>
-                  <input
-                    id="dash-filter-date-input"
-                    type="date"
-                    v-model="dashFilterDate"
-                    class="h-8 w-full max-w-[200px] py-0 px-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/15 transition-all"
-                  />
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[8px] font-bold text-slate-450 uppercase tracking-wider ml-1">Дата до:</span>
+                    <input
+                      type="date"
+                      v-model="dashDateTo"
+                      class="h-9 px-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/15 transition-all"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -830,6 +825,9 @@ export default {
       dashFilterMaster: "",
       dashFilterService: "",
       dashFilterDate: "",
+      dashDateType: "checkout",
+      dashDateFrom: "",
+      dashDateTo: "",
       isDashFiltersExpanded: false,
       chartInterval: "day",
       hoveredBarIndex: null,
@@ -884,12 +882,28 @@ export default {
           if (!s.includes(this.dashFilterService)) return false;
         }
 
-        // Date filter
-        if (this.dashFilterDate) {
-          if (!r.StartTime.startsWith(this.dashFilterDate)) return false;
-        } else {
-          // Period filtering
-          let d = new Date(r.StartTime);
+        // Date Type selection: checkin (StartTime) or checkout (EndTime)
+        let recordDateStr = (this.dashDateType === 'checkin')
+          ? r.StartTime
+          : (r.EndTime || r.StartTime);
+        if (!recordDateStr) return false;
+
+        let d = new Date(recordDateStr);
+
+        // Date Range filtering (От / До)
+        if (this.dashDateFrom) {
+          let dFrom = new Date(this.dashDateFrom);
+          dFrom.setHours(0, 0, 0, 0);
+          if (d < dFrom) return false;
+        }
+        if (this.dashDateTo) {
+          let dTo = new Date(this.dashDateTo);
+          dTo.setHours(23, 59, 59, 999);
+          if (d > dTo) return false;
+        }
+
+        // Fallback to quick period selector if no date range is set
+        if (!this.dashDateFrom && !this.dashDateTo) {
           if (this.dashboardPeriod === "day") {
             if (d.toDateString() !== now.toDateString()) return false;
           } else if (this.dashboardPeriod === "month") {
@@ -903,12 +917,6 @@ export default {
             dt.setDate(dt.getDate() - (dt.getDay() || 7) + 1); // Monday
             dt.setHours(0, 0, 0, 0);
             if (d < dt) return false;
-          } else if (
-            this.dashboardPeriod === "custom" &&
-            this.dashboardCustomDate
-          ) {
-            let cd = new Date(this.dashboardCustomDate);
-            if (d.toDateString() !== cd.toDateString()) return false;
           }
         }
 
@@ -1047,12 +1055,20 @@ export default {
 
       let period = this.dashboardPeriod;
       let list = [];
+      
+      const getRecordDate = (r) => {
+        let recordDateStr = (this.dashDateType === 'checkin')
+          ? r.StartTime
+          : (r.EndTime || r.StartTime);
+        return new Date(recordDateStr);
+      };
 
-      if (this.dashFilterDate || period === "day" || period === "custom") {
+      if (this.dashDateFrom || this.dashDateTo || this.dashFilterDate || period === "day" || period === "custom") {
         let map = {};
         records.forEach(r => {
-          let dateStr = new Date(r.StartTime).toDateString();
-          if (!map[dateStr]) map[dateStr] = { amount: 0, count: 0, d: new Date(r.StartTime) };
+          let rDate = getRecordDate(r);
+          let dateStr = rDate.toDateString();
+          if (!map[dateStr]) map[dateStr] = { amount: 0, count: 0, d: rDate };
           map[dateStr].amount += Number(r.TotalAmount) || 0;
           map[dateStr].count++;
         });
@@ -1073,7 +1089,7 @@ export default {
            let dateStr = d.toDateString();
            let amount = 0, count = 0;
            records.forEach(r => {
-             if (new Date(r.StartTime).toDateString() === dateStr) {
+             if (getRecordDate(r).toDateString() === dateStr) {
                amount += Number(r.TotalAmount) || 0;
                count++;
              }
@@ -1094,7 +1110,7 @@ export default {
            let dateStr = d.toDateString();
            let amount = 0, count = 0;
            records.forEach(r => {
-             if (new Date(r.StartTime).toDateString() === dateStr) {
+             if (getRecordDate(r).toDateString() === dateStr) {
                amount += Number(r.TotalAmount) || 0;
                count++;
              }
@@ -1109,7 +1125,7 @@ export default {
         let monthNames = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
         let map = {};
         records.forEach(r => {
-           let d = new Date(r.StartTime);
+           let d = getRecordDate(r);
            let key = d.getFullYear() + "-" + d.getMonth();
            if (!map[key]) map[key] = { amount: 0, count: 0, y: d.getFullYear(), m: d.getMonth() };
            map[key].amount += Number(r.TotalAmount) || 0;
@@ -1164,6 +1180,9 @@ export default {
       this.dashFilterDate = "";
       this.dashboardPeriod = "all";
       this.dashboardCustomDate = "";
+      this.dashDateType = "checkout";
+      this.dashDateFrom = "";
+      this.dashDateTo = "";
     },
     toggleBrandExpanded(brand) {
       const index = this.expandedBrands.indexOf(brand);

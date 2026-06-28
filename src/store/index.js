@@ -473,8 +473,16 @@ export const useMainStore = defineStore("main", {
               if (key === "records") {
                 newData.forEach(parseRecordServices);
               }
-              const tempIds = new Set(task.payload.map(p => p.ID));
-              this.db[key] = this.db[key].filter(r => !tempIds.has(r.ID));
+              if (key === 'organizationbrands') {
+                const pairs = new Set(task.payload.map(p => `${p.OrganizationID}_${p.BrandID}`));
+                this.db[key] = this.db[key].filter(r => !pairs.has(`${r.OrganizationID}_${r.BrandID}`));
+              } else if (key === 'organizationmodels') {
+                const pairs = new Set(task.payload.map(p => `${p.OrganizationID}_${p.ModelID}`));
+                this.db[key] = this.db[key].filter(r => !pairs.has(`${r.OrganizationID}_${r.ModelID}`));
+              } else {
+                const tempIds = new Set(task.payload.map(p => p.ID));
+                this.db[key] = this.db[key].filter(r => !tempIds.has(r.ID));
+              }
               this.db[key].push(...newData);
             }
           } else if (task.taskName === "bulkImport") {

@@ -268,25 +268,29 @@
               <div
                 v-for="s in group.services"
                 :key="s.ID"
-                class="px-4 py-2.5 flex justify-between items-center hover:bg-slate-50/60 transition group"
+                class="px-4 py-2.5 grid grid-cols-12 gap-2 items-center hover:bg-slate-50/60 transition group text-xs"
               >
-                <div class="space-y-0.5">
-                  <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    {{ s.Name }}
-                    <span v-if="s.IsCustom" class="text-[8px] bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.25 rounded-md uppercase font-black tracking-wider">Кастомная</span>
-                    <span v-else class="text-[8px] bg-slate-50 text-slate-500 border border-slate-200 px-1.5 py-0.25 rounded-md uppercase font-black tracking-wider">Шаблон</span>
-                  </div>
+                <!-- Name Column (col-span-6) -->
+                <div class="col-span-6 sm:col-span-7 font-semibold text-slate-800 truncate" :title="s.Name">
+                  {{ s.Name }}
                 </div>
-                <div class="flex items-center gap-3">
-                  <div class="text-xs font-black text-slate-800">{{ Number(s.Price).toLocaleString() }} сом</div>
-                  <div class="flex items-center gap-1.5">
-                    <button @click="editServicePrice(s)" class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition border-none bg-transparent cursor-pointer">
-                      <i class="bi bi-pencil-fill text-[10px]"></i>
-                    </button>
-                    <button @click="deleteItem('Services', s.ID, 'services')" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer">
-                      <i class="bi bi-trash-fill text-[10px]"></i>
-                    </button>
-                  </div>
+                <!-- Type Column (col-span-3) -->
+                <div class="col-span-3 sm:col-span-2 flex justify-start">
+                  <span v-if="s.IsCustom" class="text-[8px] bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-md uppercase font-black tracking-wider whitespace-nowrap">Кастомная</span>
+                  <span v-else class="text-[8px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md uppercase font-black tracking-wider whitespace-nowrap">Шаблон</span>
+                </div>
+                <!-- Price Column (col-span-2, only number, word "сом" removed) -->
+                <div class="col-span-2 sm:col-span-2 text-right font-black text-slate-800">
+                  {{ Number(s.Price).toLocaleString() }}
+                </div>
+                <!-- Actions Column (col-span-1) -->
+                <div class="col-span-1 flex justify-end gap-1">
+                  <button @click="editServicePrice(s)" title="Редактировать" class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition border-none bg-transparent cursor-pointer flex items-center">
+                    <i class="bi bi-pencil-fill text-[10px]"></i>
+                  </button>
+                  <button @click="deleteItem('Services', s.ID, 'services')" title="Удалить" class="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition border-none bg-transparent cursor-pointer flex items-center">
+                    <i class="bi bi-trash-fill text-[10px]"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -470,11 +474,29 @@
     <!-- Edit Price Modal (Tenant) -->
     <div v-if="editingService" class="fixed inset-0 z-50 bg-[#090D1A]/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-100 animate-fade-in p-6 space-y-4">
-        <h3 class="text-sm font-black text-slate-850 m-0 uppercase tracking-wider">Редактировать цену</h3>
-        <div class="space-y-1">
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Услуга</div>
-          <div class="text-xs font-bold text-slate-700">{{ editingService.Name }}</div>
+        <h3 class="text-sm font-black text-slate-850 m-0 uppercase tracking-wider">
+          {{ editingService.IsCustom ? 'Редактировать услугу' : 'Редактировать цену' }}
+        </h3>
+        
+        <!-- Category selection dropdown (for custom services only) -->
+        <div v-if="editingService.IsCustom" class="space-y-1">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Категория</label>
+          <select v-model="editingServiceCategory" class="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-xs text-slate-700 cursor-pointer">
+            <option v-for="cat in db.servicecategories" :key="cat.ID" :value="cat.ID">{{ cat.Name }}</option>
+          </select>
         </div>
+
+        <div class="space-y-1">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Название услуги</label>
+          <input
+            v-if="editingService.IsCustom"
+            type="text"
+            v-model="editingServiceName"
+            class="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 focus:border-indigo-500"
+          />
+          <div v-else class="text-xs font-bold text-slate-700">{{ editingService.Name }}</div>
+        </div>
+
         <div class="space-y-1">
           <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Новая цена (KGS)</label>
           <input
@@ -722,6 +744,8 @@ export default {
       selectedConfigBrandId: '',
       editingService: null,
       newPriceValue: 0,
+      editingServiceCategory: '',
+      editingServiceName: '',
       templatePrices: {},
       adminTabs: {
         categories: 'Категории',
@@ -989,6 +1013,8 @@ export default {
     editServicePrice(service) {
       this.editingService = service;
       this.newPriceValue = service.Price;
+      this.editingServiceCategory = service.CategoryID || '';
+      this.editingServiceName = service.Name || '';
     },
     saveNewPrice() {
       if (this.editingService) {
@@ -996,8 +1022,12 @@ export default {
           ...this.editingService,
           Price: this.newPriceValue
         };
+        if (this.editingService.IsCustom) {
+          payload.CategoryID = this.editingServiceCategory;
+          payload.Name = this.editingServiceName;
+        }
         this.store.dispatchSync('updateRow', payload, 'Services');
-        this.store.showToast(`Цена обновлена`);
+        this.store.showToast(`Услуга обновлена`);
         this.editingService = null;
       }
     },
