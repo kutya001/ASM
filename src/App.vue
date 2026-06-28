@@ -6,25 +6,23 @@
   />
 
   <div
-    class="fixed top-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none"
+    class="fixed top-4 right-4 z-[9999] flex flex-col gap-1.5 pointer-events-none"
   >
     <div
       v-for="t in toasts"
       :key="t.id"
-      class="px-5 py-3.5 rounded-xl shadow-xl text-sm font-bold text-white flex items-center justify-between min-w-[280px]"
+      class="px-3.5 py-1.5 rounded-lg shadow-md text-xs font-semibold text-white flex items-center gap-2 max-w-[280px]"
       :class="t.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'"
     >
-      <div class="flex items-center gap-3">
-        <i
-          class="bi text-lg"
-          :class="
-            t.type === 'error'
-              ? 'bi-exclamation-triangle-fill'
-              : 'bi-check-circle-fill'
-          "
-        ></i>
-        <span>{{ t.msg }}</span>
-      </div>
+      <i
+        class="bi text-sm shrink-0"
+        :class="
+          t.type === 'error'
+            ? 'bi-exclamation-triangle-fill'
+            : 'bi-check-circle-fill'
+        "
+      ></i>
+      <span class="leading-tight">{{ t.msg }}</span>
     </div>
   </div>
 
@@ -125,6 +123,7 @@
             @open-bulk-modal="openBulkUploadModal"
             @del-row="delRow"
             @sub-tab-changed="refsSubTabTitle = $event"
+            @import-modal-toggle="isImportModalOpen = $event"
           />
 
           <UsersTab
@@ -158,7 +157,7 @@
         </div>
       </div>
 
-      <MobileNav :active-tab="activeTab" @update:active-tab="activeTab = $event" />
+      <MobileNav v-if="!isImportModalOpen" :active-tab="activeTab" @update:active-tab="activeTab = $event" />
     </main>
 
     <ProfileModal ref="profileModal" :store="store" @logout="logout" @reopen-welcome="showWelcome = true" />
@@ -170,7 +169,7 @@
 
     <!-- Floating Action Button (FAB) for ergonomics -->
     <button
-      v-if="showFAB"
+      v-if="showFAB && !isImportModalOpen"
       @click="handleFABClick"
       class="fixed bottom-24 right-6 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow-2xl shadow-indigo-600/35 border-none cursor-pointer active:scale-95 transition-all"
       id="app-mobile-fab"
@@ -237,6 +236,7 @@ export default {
       advFilterBrand: "",
       advFilterModel: "",
       refsSubTabTitle: "",
+      isImportModalOpen: false,
     };
   },
   watch: {
@@ -247,6 +247,9 @@ export default {
           this.activeTab = 'dashboard';
         }
       }
+    },
+    activeTab() {
+      this.isImportModalOpen = false;
     }
   },
   computed: {

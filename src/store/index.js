@@ -116,10 +116,19 @@ export const useMainStore = defineStore("main", {
     },
     showToast(msg, type = "success") {
       const id = Date.now();
-      this.toasts.push({ id, msg, type });
+      let shortMsg = msg;
+      if (type === 'success' && typeof msg === 'string') {
+        const lower = msg.toLowerCase();
+        if (lower.includes('сохранен') || lower.includes('сохранить') || lower.includes('сохранено') || lower.includes('сохранена')) {
+          shortMsg = 'Сохранено';
+        } else if (lower.includes('успешно') || lower.includes('обновлен') || lower.includes('обновлено') || lower.includes('добавлен') || lower.includes('добавлена') || lower.includes('создан') || lower.includes('создана') || lower.includes('импортирован') || lower.includes('выполнен')) {
+          shortMsg = 'Выполнено';
+        }
+      }
+      this.toasts.push({ id, msg: shortMsg, type });
       setTimeout(() => {
         this.toasts = this.toasts.filter((t) => t.id !== id);
-      }, 4000);
+      }, 3000);
     },
     updateBranding(logoUrl, welcomeBannerUrl, appIcon) {
       this.logoUrl = logoUrl || "";

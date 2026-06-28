@@ -753,6 +753,7 @@ export default {
           }
         });
       }
+      this.$emit('import-modal-toggle', !!val);
     },
     // Auto-expand brands matching global search query
     searchQuery(newQuery) {
