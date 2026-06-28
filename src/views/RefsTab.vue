@@ -844,6 +844,13 @@ export default {
   mounted() {
     this.notifySubTabChanged();
   },
+  unmounted() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  },
   methods: {
     syncLocalCars() {
       const myOrgId = this.store.user && this.store.user.OrganizationID;

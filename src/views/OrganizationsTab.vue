@@ -257,6 +257,18 @@ export default {
       this.bsModal = new bootstrap.Modal(this.$refs.orgModalRef);
     }
   },
+  unmounted() {
+    if (this.bsModal) {
+      try {
+        this.bsModal.hide();
+      } catch (e) {}
+    }
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  },
   methods: {
     parseDateSafely(dateStr) {
       if (!dateStr) return null;
