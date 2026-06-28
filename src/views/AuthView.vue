@@ -597,10 +597,45 @@
             </div>
           </template>
 
+          <!-- Accept Offer and Privacy Policy checkboxes -->
+          <template v-if="authMode === 'register'">
+            <div class="pt-3 space-y-3 border-t border-slate-800/40 text-left">
+              <!-- Offer Checkbox -->
+              <div class="flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  v-model="hasAcceptedOffer"
+                  disabled
+                  id="offer-check"
+                  class="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-600 focus:ring-0 focus:ring-offset-0 disabled:opacity-85"
+                />
+                <label for="offer-check" class="text-xs text-slate-400 font-semibold leading-snug cursor-pointer select-none" @click.prevent="openLegalModal('offer')">
+                  Я согласен с условиями 
+                  <span class="text-indigo-400 font-bold hover:underline">договора-оферты</span>
+                </label>
+              </div>
+
+              <!-- Privacy Checkbox -->
+              <div class="flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  v-model="hasAcceptedPrivacy"
+                  disabled
+                  id="privacy-check"
+                  class="mt-0.5 w-4 h-4 rounded border-slate-800 text-indigo-600 focus:ring-0 focus:ring-offset-0 disabled:opacity-85"
+                />
+                <label for="privacy-check" class="text-xs text-slate-400 font-semibold leading-snug cursor-pointer select-none" @click.prevent="openLegalModal('privacy')">
+                  Я принимаю 
+                  <span class="text-indigo-400 font-bold hover:underline">политику конфиденциальности</span>
+                </label>
+              </div>
+            </div>
+          </template>
+
           <button
             @click="handleAuth"
-            :disabled="authLoading"
-            class="w-full h-11 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-650/20 mt-6 flex justify-center items-center gap-2 cursor-pointer border-none"
+            :disabled="authLoading || (authMode === 'register' && (!hasAcceptedOffer || !hasAcceptedPrivacy))"
+            class="w-full h-11 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-650/20 mt-6 flex justify-center items-center gap-2 cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span
               v-if="authLoading"
@@ -621,12 +656,65 @@
         </div>
       </div>
     </div>
+
+    <!-- Legal Document Modal -->
+    <div
+      v-if="activeLegalDoc"
+      class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+    >
+      <div class="bg-[#0F1424] w-full max-w-2xl rounded-3xl border border-slate-800 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-[#0F1424]">
+          <h3 class="font-heading font-black text-xs text-white uppercase tracking-wider m-0">
+            {{ activeLegalDoc === 'offer' ? 'Договор-оферта' : 'Политика конфиденциальности' }}
+          </h3>
+          <button
+            @click="closeLegalModal"
+            class="text-slate-400 hover:text-white bg-transparent border-none cursor-pointer p-0 flex items-center justify-center"
+          >
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        
+        <!-- Scrollable content -->
+        <div
+          ref="legalScrollContainer"
+          @scroll="handleLegalScroll"
+          class="flex-1 p-6 overflow-y-auto text-left text-xs text-slate-350 leading-relaxed space-y-4 font-semibold select-text"
+        >
+          <div v-html="activeLegalText"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-slate-800 bg-[#0E1322] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div class="text-[10px] text-slate-500 font-bold text-left w-full sm:w-auto">
+            <span v-if="!hasScrolledToBottom" class="text-amber-500 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+              Прокрутите текст до конца, чтобы принять условия
+            </span>
+            <span v-else class="text-emerald-500 flex items-center gap-1 font-extrabold">
+              <span class="material-symbols-outlined text-[14px]">check_circle</span>
+              Текст прочитан. Можно принять условия.
+            </span>
+          </div>
+          
+          <button
+            @click="acceptCurrentLegal"
+            :disabled="!hasScrolledToBottom"
+            class="w-full sm:w-auto h-10 px-6 bg-indigo-600 hover:bg-indigo-755 disabled:bg-slate-800 disabled:text-slate-550 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer border-none flex items-center justify-center gap-1 disabled:cursor-not-allowed shrink-0"
+          >
+            Я прочитал(а) и согласен(согласна)
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { useMainStore } from "../store";
 import { getOrganizations } from "../services/api";
+import { OFFER_AGREEMENT_HTML, PRIVACY_POLICY_HTML } from "../utils/legalTexts";
 
 export default {
   data() {
@@ -641,11 +729,28 @@ export default {
       authLoading: false,
       numAccounts: 3,
       hoveredBarIndex: null,
+      
+      // Legal docs state
+      hasAcceptedOffer: false,
+      hasAcceptedPrivacy: false,
+      activeLegalDoc: null,
+      hasScrolledToBottom: false,
     };
+  },
+  watch: {
+    authMode(val) {
+      this.hasAcceptedOffer = false;
+      this.hasAcceptedPrivacy = false;
+    }
   },
   computed: {
     store() {
       return useMainStore();
+    },
+    activeLegalText() {
+      if (this.activeLegalDoc === 'offer') return OFFER_AGREEMENT_HTML;
+      if (this.activeLegalDoc === 'privacy') return PRIVACY_POLICY_HTML;
+      return '';
     },
     calculatedPrice() {
       const base = 1500;
@@ -721,6 +826,9 @@ export default {
         if (this.authMode === "login") {
           await store.login(loginUser, this.authForm.password);
         } else {
+          if (!this.hasAcceptedOffer || !this.hasAcceptedPrivacy) {
+            throw new Error("Пожалуйста, примите условия договора-оферты и политики конфиденциальности.");
+          }
           const orgValue = this.orgMode === "create" ? this.newOrgName : this.selectedOrgId;
           await store.register(loginUser, this.authForm.password, this.orgMode, orgValue);
           this.authMode = "login";
@@ -732,6 +840,37 @@ export default {
       } finally {
         this.authLoading = false;
       }
+    },
+    openLegalModal(type) {
+      this.activeLegalDoc = type;
+      this.hasScrolledToBottom = false;
+      this.$nextTick(() => {
+        const container = this.$refs.legalScrollContainer;
+        if (container) {
+          container.scrollTop = 0;
+          if (container.scrollHeight <= container.clientHeight) {
+            this.hasScrolledToBottom = true;
+          }
+        }
+      });
+    },
+    closeLegalModal() {
+      this.activeLegalDoc = null;
+      this.hasScrolledToBottom = false;
+    },
+    handleLegalScroll(e) {
+      const el = e.target;
+      if (el.scrollHeight - el.scrollTop <= el.clientHeight + 12) {
+        this.hasScrolledToBottom = true;
+      }
+    },
+    acceptCurrentLegal() {
+      if (this.activeLegalDoc === 'offer') {
+        this.hasAcceptedOffer = true;
+      } else if (this.activeLegalDoc === 'privacy') {
+        this.hasAcceptedPrivacy = true;
+      }
+      this.closeLegalModal();
     },
     formatPhoneForLink(phone) {
       if (!phone) return "";
