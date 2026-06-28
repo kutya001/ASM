@@ -133,85 +133,87 @@
     </button>
 
     <!-- Bootstrap Modal for Add/Edit Organization -->
-    <div
-      class="modal fade"
-      ref="orgModalRef"
-      tabindex="-1"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden bg-white">
-          <div class="modal-header border-b border-slate-100 px-6 py-5 bg-white">
-            <h5 class="modal-title font-bold text-slate-800 m-0">
-              {{ orgForm.ID ? 'Редактировать' : 'Добавить' }} организацию
-            </h5>
-            <button
-              type="button"
-              class="btn-close text-slate-400 focus:ring-0 shrink-0 border-none bg-transparent"
-              @click="hideOrgModal"
-            ></button>
-          </div>
-          <div class="modal-body bg-slate-50/50 p-6 space-y-4 text-left">
-            <div>
-              <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
-                >Название организации</label
-              >
-              <input
-                type="text"
-                v-model="orgForm.Name"
-                placeholder="Введите название автосервиса"
-                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 shadow-sm focus:border-indigo-500"
-              />
+    <teleport to="body">
+      <div
+        class="modal fade"
+        ref="orgModalRef"
+        tabindex="-1"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden bg-white">
+            <div class="modal-header border-b border-slate-100 px-6 py-5 bg-white">
+              <h5 class="modal-title font-bold text-slate-800 m-0">
+                {{ orgForm.ID ? 'Редактировать' : 'Добавить' }} организацию
+              </h5>
+              <button
+                type="button"
+                class="btn-close text-slate-400 focus:ring-0 shrink-0 border-none bg-transparent"
+                @click="hideOrgModal"
+              ></button>
             </div>
-
-            <!-- Subscription section in Modal -->
-            <div class="pt-2 border-t border-slate-100 space-y-3">
-              <span class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Управление подпиской</span>
-              
-              <div class="flex gap-2">
-                <button
-                  type="button"
-                  @click="extendSubByMonth"
-                  class="flex-1 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition border-none cursor-pointer flex items-center justify-center gap-1"
-                >
-                  <span class="material-symbols-outlined text-[14px]">add_circle</span>
-                  Продлить на 1 месяц
-                </button>
-              </div>
-
+            <div class="modal-body bg-slate-50/50 p-6 space-y-4 text-left">
               <div>
-                <label class="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1.5"
-                  >Дата окончания подписки</label
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
+                  >Название организации</label
                 >
                 <input
-                  type="date"
-                  v-model="orgForm.SubscriptionEndsAt"
+                  type="text"
+                  v-model="orgForm.Name"
+                  placeholder="Введите название автосервиса"
                   class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 shadow-sm focus:border-indigo-500"
                 />
               </div>
+
+              <!-- Subscription section in Modal -->
+              <div class="pt-2 border-t border-slate-100 space-y-3">
+                <span class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Управление подпиской</span>
+                
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    @click="extendSubByMonth"
+                    class="flex-1 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition border-none cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    <span class="material-symbols-outlined text-[14px]">add_circle</span>
+                    Продлить на 1 месяц
+                  </button>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1.5"
+                    >Дата окончания подписки</label
+                  >
+                  <input
+                    type="date"
+                    v-model="orgForm.SubscriptionEndsAt"
+                    class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 shadow-sm focus:border-indigo-500"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="modal-footer border-t border-slate-100 px-6 py-4 bg-white flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <button
-              type="button"
-              class="w-full sm:flex-1 px-4 py-2.5 border border-slate-205 text-slate-600 rounded-xl bg-white hover:bg-slate-50 font-bold text-sm transition cursor-pointer"
-              @click="hideOrgModal"
-            >
-              Отмена
-            </button>
-            <button
-              type="button"
-              class="w-full sm:flex-1 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 border-none cursor-pointer"
-              @click="saveOrg"
-              :disabled="isSaving"
-            >
-              <span v-if="isSaving" class="spinner-border spinner-border-sm text-white border-2"></span>
-              <span>Сохранить</span>
-            </button>
+            <div class="modal-footer border-t border-slate-100 px-6 py-4 bg-white flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <button
+                type="button"
+                class="w-full sm:flex-1 px-4 py-2.5 border border-slate-205 text-slate-600 rounded-xl bg-white hover:bg-slate-50 font-bold text-sm transition cursor-pointer"
+                @click="hideOrgModal"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                class="w-full sm:flex-1 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 border-none cursor-pointer"
+                @click="saveOrg"
+                :disabled="isSaving"
+              >
+                <span v-if="isSaving" class="spinner-border spinner-border-sm text-white border-2"></span>
+                <span>Сохранить</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </teleport>
   </div>
 </template>
 
@@ -240,15 +242,15 @@ export default {
     activeOrgsCount() {
       if (!this.db.organizations) return 0;
       return this.db.organizations.filter(o => {
-        const d = this.parseDateSafely(o.SubscriptionEndsAt);
-        return d ? d > new Date() : false;
+        if (!o.SubscriptionEndsAt) return false;
+        return new Date(o.SubscriptionEndsAt) > new Date();
       }).length;
     },
     expiredOrgsCount() {
       if (!this.db.organizations) return 0;
       return this.db.organizations.filter(o => {
-        const d = this.parseDateSafely(o.SubscriptionEndsAt);
-        return d ? d <= new Date() : true;
+        if (!o.SubscriptionEndsAt) return true;
+        return new Date(o.SubscriptionEndsAt) <= new Date();
       }).length;
     }
   },
@@ -257,27 +259,7 @@ export default {
       this.bsModal = new bootstrap.Modal(this.$refs.orgModalRef);
     }
   },
-  unmounted() {
-    if (this.bsModal) {
-      try {
-        this.bsModal.hide();
-      } catch (e) {}
-    }
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(el => el.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-  },
   methods: {
-    parseDateSafely(dateStr) {
-      if (!dateStr) return null;
-      if (dateStr instanceof Date) return dateStr;
-      // Replace space with T for ISO-8601 compatibility
-      const cleanStr = String(dateStr).replace(" ", "T");
-      const d = new Date(cleanStr);
-      return isNaN(d.getTime()) ? null : d;
-    },
     getOrgUsersCount(orgId) {
       if (!this.db.users) return 0;
       return this.db.users.filter(u => u.OrganizationID === orgId).length;
@@ -293,12 +275,12 @@ export default {
         .reduce((acc, r) => acc + (Number(r.TotalAmount) || 0), 0);
     },
     isOrgSubActive(org) {
-      const d = this.parseDateSafely(org.SubscriptionEndsAt);
-      return d ? d > new Date() : false;
+      if (!org.SubscriptionEndsAt) return false;
+      return new Date(org.SubscriptionEndsAt) > new Date();
     },
     formatSubDate(dateStr) {
-      const d = this.parseDateSafely(dateStr);
-      if (!d) return "—";
+      if (!dateStr) return "—";
+      const d = new Date(dateStr);
       const dd = String(d.getDate()).padStart(2, "0");
       const mm = String(d.getMonth() + 1).padStart(2, "0");
       const yyyy = d.getFullYear();
@@ -307,14 +289,13 @@ export default {
     openOrgModal(org = null) {
       if (org) {
         let dateStr = "";
-        const d = this.parseDateSafely(org.SubscriptionEndsAt);
-        if (d) {
-          dateStr = d.toISOString().split('T')[0];
+        if (org.SubscriptionEndsAt) {
+          dateStr = new Date(org.SubscriptionEndsAt).toISOString().split('T')[0];
         } else {
           // Default to exactly 1 month from now
-          const fallback = new Date();
-          fallback.setMonth(fallback.getMonth() + 1);
-          dateStr = fallback.toISOString().split('T')[0];
+          const d = new Date();
+          d.setMonth(d.getMonth() + 1);
+          dateStr = d.toISOString().split('T')[0];
         }
         this.orgForm = {
           ID: org.ID,
@@ -338,10 +319,9 @@ export default {
     extendSubByMonth() {
       let baseDate = new Date();
       if (this.orgForm.SubscriptionEndsAt) {
-        // Since orgForm.SubscriptionEndsAt is formatted as YYYY-MM-DD input, parsing is clean
         const currentEnds = new Date(this.orgForm.SubscriptionEndsAt);
         // If current subscription date is in the future, extend from that date
-        if (!isNaN(currentEnds.getTime()) && currentEnds > new Date()) {
+        if (currentEnds > new Date()) {
           baseDate = currentEnds;
         }
       }
