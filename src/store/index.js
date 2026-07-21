@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import router from "../router";
 import { 
   supabase, 
   loginUser, 
@@ -111,6 +112,12 @@ export const useMainStore = defineStore("main", {
       localStorage.setItem("currentUser", JSON.stringify(res));
       this.showToast(`Успешный вход. Привет, ${res.Name || res.Username}!`);
       await this.loadInitialData();
+      const role = res.Role || res.role;
+      if (role === "Superadmin") {
+        router.push("/all_users");
+      } else {
+        router.push("/records");
+      }
     },
     async register(username, password, orgMode, orgValue) {
       let res = await registerUserWithOrg(username, password, orgMode, orgValue);

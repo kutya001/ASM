@@ -825,6 +825,12 @@ export default {
 
         if (this.authMode === "login") {
           await store.login(loginUser, this.authForm.password);
+          const role = store.user ? (store.user.Role || store.user.role) : "";
+          if (role === "Superadmin") {
+            this.$router.push("/all_users");
+          } else {
+            this.$router.push("/records");
+          }
         } else {
           if (!this.hasAcceptedOffer || !this.hasAcceptedPrivacy) {
             throw new Error("Пожалуйста, примите условия договора-оферты и политики конфиденциальности.");
