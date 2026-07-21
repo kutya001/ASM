@@ -6,9 +6,19 @@
         <span class="material-symbols-outlined text-[18px] text-indigo-600 font-bold">people</span>
         Управление всеми пользователями
       </h2>
-      <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/40">
-        Всего в базе: {{ filteredUsers.length }} чел.
-      </span>
+      <div class="flex items-center gap-2">
+        <button
+          @click="fetchUsers"
+          class="h-7 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-650 rounded-lg text-[10px] font-bold uppercase transition border-none cursor-pointer flex items-center gap-1"
+          :disabled="isFetching"
+        >
+          <span class="material-symbols-outlined text-[14px]">refresh</span>
+          Обновить
+        </button>
+        <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/40">
+          Всего в базе: {{ filteredUsers.length }} чел.
+        </span>
+      </div>
     </div>
 
     <!-- Filters Panel -->
@@ -78,11 +88,11 @@
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-2.5">
                   <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 font-extrabold flex items-center justify-center select-none shrink-0 border border-indigo-100/30 uppercase">
-                    {{ u.Name ? u.Name.slice(0, 2) : u.Username.slice(0, 2) }}
+                    {{ (u.Name || u.Username || u.name || u.username || 'US').slice(0, 2) }}
                   </div>
                   <div>
-                    <div class="font-bold text-slate-800">{{ u.Name || '—' }}</div>
-                    <div class="text-[10px] text-slate-400">ID: {{ u.ID.slice(0, 8) }}...</div>
+                    <div class="font-bold text-slate-800">{{ u.Name || u.name || '—' }}</div>
+                    <div class="text-[10px] text-slate-400">ID: {{ (u.ID || u.id || '').slice(0, 8) }}...</div>
                   </div>
                 </div>
               </td>
@@ -182,7 +192,7 @@
       <div v-for="u in filteredUsers" :key="u.ID" class="bg-white border border-slate-150 rounded-2xl p-4 shadow-sm flex flex-col gap-3 text-left">
         <div class="flex gap-2.5 items-start">
           <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 font-extrabold flex items-center justify-center uppercase shrink-0">
-            {{ u.Name ? u.Name.slice(0, 2) : u.Username.slice(0, 2) }}
+            {{ (u.Name || u.Username || u.name || u.username || 'US').slice(0, 2) }}
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 flex-wrap">
@@ -328,7 +338,7 @@
 
 <script>
 import { useMainStore } from "../store";
-import { adminUpdateUserPassword } from "../services/api";
+import { adminUpdateUserPassword, supabase, toApp } from "../services/api";
 
 export default {
   name: "AllUsersTab",
@@ -347,6 +357,7 @@ export default {
       visiblePasswords: {},
       editForm: { ID: "", Name: "", Phone: "", OrganizationID: "", Role: "Master", Status: "Approved", NewPassword: "" },
       isSaving: false,
+      isFetching: false,
       bsModal: null
     };
   },
@@ -359,12 +370,12 @@ export default {
 
       // Filter by Role
       if (this.filterRole !== "all") {
-        list = list.filter(u => u.Role === this.filterRole);
+        list = list.filter(u => (u.Role || u.role) === this.filterRole);
       }
 
       // Filter by Status
       if (this.filterStatus !== "all") {
-        list = list.filter(u => u.Status === this.filterStatus);
+        list = list.filter(u => (u.Status || u.status) === this.filterStatus);
       }
 
       // Filter by Org
@@ -376,9 +387,9 @@ export default {
       if (this.searchQueryLocal) {
         const q = this.searchQueryLocal.toLowerCase().trim();
         list = list.filter(u => {
-          const name = String(u.Name || '').toLowerCase();
-          const username = String(u.Username || '').toLowerCase();
-          const phone = String(u.Phone || '').toLowerCase();
+          const name = String(u.Name || u.name || '').toLowerCase();
+          const username = String(u.Username || u.username || '').toLowerCase();
+          const phone = String(u.Phone || u.phone || '').toLowerCase();
           return name.includes(q) || username.includes(q) || phone.includes(q);
         });
       }
@@ -387,17 +398,35 @@ export default {
     }
   },
   mounted() {
+    this.fetchUsers();
     if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
       this.bsModal = new bootstrap.Modal(this.$refs.editModalRef);
     }
   },
   methods: {
+    async fetchUsers() {
+      this.isFetching = true;
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("id, username, password, role, status, name, phone, organization_id, created_at, last_login_at")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        const mapped = (data || []).map(u => toApp("users", u));
+        this.store.db.users = mapped;
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+      } finally {
+        this.isFetching = false;
+      }
+    },
     togglePassword(id) {
       this.visiblePasswords[id] = !this.visiblePasswords[id];
     },
     getOrgName(orgId) {
       if (!this.db.organizations) return "—";
-      const org = this.db.organizations.find(o => o.ID === orgId);
+      const org = this.db.organizations.find(o => (o.ID || o.id) === orgId);
       return org ? org.Name : "—";
     },
     formatSubDate(dateStr) {

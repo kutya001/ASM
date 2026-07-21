@@ -139,6 +139,7 @@
 
 <script>
 import { supabase } from '../services/api';
+import { useMainStore } from '../store';
 
 export default {
   name: "PageAnalyticsTab",
@@ -151,6 +152,9 @@ export default {
     };
   },
   computed: {
+    store() {
+      return useMainStore();
+    },
     allPages() {
       const set = new Set(this.pageViews.map(l => l.page_name));
       return Array.from(set);
@@ -215,24 +219,25 @@ export default {
       try {
         const { data, error } = await supabase
           .from("page_views")
-          .select(`
-            id,
-            page_name,
-            created_at,
-            user_id,
-            organization_id,
-            users (
-              name,
-              username
-            ),
-            organizations (
-              name
-            )
-          `)
+          .select("*")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        this.pageViews = data || [];
+
+        const usersList = this.store.db.users || [];
+        const orgsList = this.store.db.organizations || [];
+
+        const enrichedLogs = (data || []).map(log => {
+          const user = usersList.find(u => String(u.ID || u.id) === String(log.user_id));
+          const org = orgsList.find(o => String(o.ID || o.id) === String(log.organization_id));
+          return {
+            ...log,
+            users: user ? { name: user.Name || user.name || '', username: user.Username || user.username || '' } : null,
+            organizations: org ? { name: org.Name || org.name || '' } : null
+          };
+        });
+
+        this.pageViews = enrichedLogs;
       } catch (err) {
         console.error("Failed to fetch page views logs:", err);
       } finally {

@@ -67,7 +67,7 @@
           <div
             class="w-10 h-10 rounded-xl bg-slate-550/5 flex items-center justify-center text-indigo-700 font-extrabold text-xs tracking-tight shrink-0 border border-slate-200/50 uppercase select-none mt-0.5"
           >
-            {{ u.Name ? u.Name.slice(0, 2) : u.Username.slice(0, 2) }}
+            {{ (u.Name || u.Username || u.name || u.username || 'US').slice(0, 2) }}
           </div>
           <!-- Name and detailed badges -->
           <div class="min-w-0 flex-1 space-y-0.5">
