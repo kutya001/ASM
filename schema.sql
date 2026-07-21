@@ -317,6 +317,12 @@ create policy "Allow select subscription_logs for same org or Superadmin" on sub
 create policy "Allow write subscription_logs for Superadmin" on subscription_logs for all
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
 
+create policy "Allow insert subscription_logs for same org or Superadmin" on subscription_logs for insert
+  with check (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+  );
+
 -- 14. Support Tickets RLS & Policies
 alter table support_tickets enable row level security;
 
