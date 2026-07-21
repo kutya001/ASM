@@ -529,18 +529,24 @@
                           v-model="brandSearchInput"
                           @focus="onBrandFocus"
                           @click="onBrandFocus"
+                          @keydown.down.prevent="navigateBrandList(1)"
+                          @keydown.up.prevent="navigateBrandList(-1)"
+                          @keydown.enter.prevent="selectHighlightedBrand"
+                          @keydown.esc="hideBrandDropdown"
                           class="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition"
                           placeholder="Выберите марку..."
                         />
                         <div
                           v-show="showBrandDropdown"
-                          class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-100 max-h-48 overflow-y-auto z-50"
+                          class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-100 max-h-48 overflow-y-auto z-50 divide-y divide-slate-50"
                         >
                           <div
-                            v-for="b in filteredBrandsList"
+                            v-for="(b, idx) in filteredBrandsList"
                             :key="b.ID"
-                            @click.stop="selectBrand(b)"
-                            class="px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            :ref="'brand_item_' + idx"
+                            @mousedown.prevent="selectBrand(b)"
+                            class="px-3 py-2 text-xs font-bold transition-colors cursor-pointer"
+                            :class="idx === brandHighlightIndex || recordForm.BrandID === b.ID ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
                           >
                             {{ b.Name }}
                           </div>
@@ -565,19 +571,25 @@
                           v-model="modelSearchInput"
                           @focus="onModelFocus"
                           @click="onModelFocus"
+                          @keydown.down.prevent="navigateModelList(1)"
+                          @keydown.up.prevent="navigateModelList(-1)"
+                          @keydown.enter.prevent="selectHighlightedModel"
+                          @keydown.esc="hideModelDropdown"
                           :disabled="!recordForm.BrandID"
                           class="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition disabled:opacity-50"
                           placeholder="Выберите модель..."
                         />
                         <div
                           v-show="showModelDropdown"
-                          class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-100 max-h-48 overflow-y-auto z-50"
+                          class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-100 max-h-48 overflow-y-auto z-50 divide-y divide-slate-50"
                         >
                           <div
-                            v-for="m in filteredModelsList"
+                            v-for="(m, idx) in filteredModelsList"
                             :key="m.ID"
-                            @click.stop="selectModel(m)"
-                            class="px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            :ref="'model_item_' + idx"
+                            @mousedown.prevent="selectModel(m)"
+                            class="px-3 py-2 text-xs font-bold transition-colors cursor-pointer"
+                            :class="idx === modelHighlightIndex || recordForm.ModelID === m.ID ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'"
                           >
                             {{ m.Name }}
                           </div>
@@ -685,7 +697,11 @@
                         type="text"
                         autocomplete="off"
                         v-model="serviceSearch"
-                        @focus="showServiceSelector = true"
+                        @focus="onServiceFocus"
+                        @keydown.down.prevent="navigateServiceList(1)"
+                        @keydown.up.prevent="navigateServiceList(-1)"
+                        @keydown.enter.prevent="selectHighlightedService"
+                        @keydown.esc="hideServiceDropdown"
                         class="w-full h-9 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition"
                         placeholder="Поиск услуги или впишите новую..."
                       />
@@ -695,14 +711,16 @@
                       class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_0_10px_0_rgba(0,0,0,0.02)] border border-slate-100 max-h-56 overflow-y-auto z-[60]"
                     >
                       <button
-                        v-for="srv in filteredServices"
+                        v-for="(srv, idx) in filteredServices"
                         :key="srv.ID"
+                        :ref="'service_item_' + idx"
                         type="button"
-                        @click.stop="toggleService(srv.ID)"
+                        @mousedown.prevent="toggleService(srv.ID)"
                         class="w-full px-3 py-2.5 text-xs font-semibold hover:bg-slate-50 cursor-pointer flex justify-between items-start gap-3 transition-colors border-b border-slate-50 last:border-0"
-                        :class="
-                          isServiceSelected(srv.ID) ? 'text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50' : 'text-slate-700'
-                        "
+                        :class="[
+                          isServiceSelected(srv.ID) ? 'text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50' : 'text-slate-700',
+                          idx === serviceHighlightIndex ? 'bg-indigo-100/70 font-bold' : ''
+                        ]"
                       >
                         <span class="flex-1 text-left flex items-start gap-1.5 whitespace-normal break-words text-wrap leading-snug">
                           <i v-if="isServiceSelected(srv.ID)" class="bi bi-check text-indigo-600 text-xs mt-0.5 shrink-0 block"></i>
@@ -714,7 +732,7 @@
                       
                       <button
                         type="button"
-                        @click.stop="addCustomServiceFromName"
+                        @mousedown.prevent="addCustomServiceFromName"
                         v-if="serviceSearch.trim().length > 0 && !filteredServices.some(s => String(s.Name || '').toLowerCase() === serviceSearch.trim().toLowerCase())"
                         class="w-full px-3 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer border-t border-slate-100 flex items-center gap-2 bg-indigo-600 transition"
                       >
@@ -933,6 +951,9 @@ export default {
       showBrandDropdown: false,
       modelSearchInput: "",
       showModelDropdown: false,
+      brandHighlightIndex: -1,
+      modelHighlightIndex: -1,
+      serviceHighlightIndex: -1,
       isSaving: false,
       bsModal: null,
       applicationRef: null,
@@ -1305,6 +1326,7 @@ export default {
     },
     onBrandFocus(event) {
       this.showBrandDropdown = true;
+      this.brandHighlightIndex = -1;
       if (event && event.target && typeof event.target.select === "function") {
         event.target.select();
       }
@@ -1314,14 +1336,18 @@ export default {
         return;
       }
       this.showModelDropdown = true;
+      this.modelHighlightIndex = -1;
       if (event && event.target && typeof event.target.select === "function") {
         event.target.select();
       }
     },
+    onServiceFocus() {
+      this.showServiceSelector = true;
+      this.serviceHighlightIndex = -1;
+    },
     hideBrandDropdown() {
-      setTimeout(() => {
-        this.showBrandDropdown = false;
-      }, 200);
+      this.showBrandDropdown = false;
+      this.brandHighlightIndex = -1;
     },
     selectBrand(b) {
       if (this.recordForm.BrandID !== b.ID) {
@@ -1331,26 +1357,81 @@ export default {
       }
       this.brandSearchInput = b.Name;
       this.showBrandDropdown = false;
+      this.brandHighlightIndex = -1;
       this.ignoreModelFocus = true;
       setTimeout(() => {
         this.ignoreModelFocus = false;
-      }, 350);
+      }, 200);
     },
     hideModelDropdown() {
-      setTimeout(() => {
-        this.showModelDropdown = false;
-      }, 200);
+      this.showModelDropdown = false;
+      this.modelHighlightIndex = -1;
     },
     selectModel(m) {
       this.recordForm.ModelID = m.ID;
       this.modelSearchInput = m.Name;
       this.showModelDropdown = false;
+      this.modelHighlightIndex = -1;
       this.showServiceSelector = true;
     },
     hideServiceDropdown() {
-      setTimeout(() => {
-        this.showServiceSelector = false;
-      }, 200);
+      this.showServiceSelector = false;
+      this.serviceHighlightIndex = -1;
+    },
+    navigateBrandList(dir) {
+      if (!this.showBrandDropdown) this.showBrandDropdown = true;
+      const list = this.filteredBrandsList;
+      if (!list.length) return;
+      this.brandHighlightIndex = (this.brandHighlightIndex + dir + list.length) % list.length;
+      this.scrollToItem("brand_item_", this.brandHighlightIndex);
+    },
+    selectHighlightedBrand() {
+      const list = this.filteredBrandsList;
+      if (this.brandHighlightIndex >= 0 && this.brandHighlightIndex < list.length) {
+        this.selectBrand(list[this.brandHighlightIndex]);
+      } else if (list.length > 0) {
+        this.selectBrand(list[0]);
+      }
+    },
+    navigateModelList(dir) {
+      if (!this.showModelDropdown) this.showModelDropdown = true;
+      const list = this.filteredModelsList;
+      if (!list.length) return;
+      this.modelHighlightIndex = (this.modelHighlightIndex + dir + list.length) % list.length;
+      this.scrollToItem("model_item_", this.modelHighlightIndex);
+    },
+    selectHighlightedModel() {
+      const list = this.filteredModelsList;
+      if (this.modelHighlightIndex >= 0 && this.modelHighlightIndex < list.length) {
+        this.selectModel(list[this.modelHighlightIndex]);
+      } else if (list.length > 0) {
+        this.selectModel(list[0]);
+      }
+    },
+    navigateServiceList(dir) {
+      if (!this.showServiceSelector) this.showServiceSelector = true;
+      const list = this.filteredServices;
+      if (!list.length) return;
+      this.serviceHighlightIndex = (this.serviceHighlightIndex + dir + list.length) % list.length;
+      this.scrollToItem("service_item_", this.serviceHighlightIndex);
+    },
+    selectHighlightedService() {
+      const list = this.filteredServices;
+      if (this.serviceHighlightIndex >= 0 && this.serviceHighlightIndex < list.length) {
+        const item = list[this.serviceHighlightIndex];
+        this.toggleService(item.ID);
+      } else if (list.length > 0) {
+        this.toggleService(list[0].ID);
+      }
+    },
+    scrollToItem(prefix, idx) {
+      this.$nextTick(() => {
+        const ref = this.$refs[prefix + idx];
+        const el = Array.isArray(ref) ? ref[0] : ref;
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ block: "nearest" });
+        }
+      });
     },
     isServiceSelected(id) {
       return this.recordForm.ServicesJSON.some((s) => s.id === id);
