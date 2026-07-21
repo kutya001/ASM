@@ -71,7 +71,9 @@
         >
           АДМИНКА
         </div>
+        <!-- Staff for SenMaster -->
         <a
+          v-if="user.Role === 'SenMaster'"
           @click="setTab('users')"
           :class="
             activeTab === 'users'
@@ -84,6 +86,38 @@
             class="bi bi-people-fill w-4 h-4 flex items-center justify-center"
           ></i>
           Персонал
+        </a>
+        <!-- Users for Superadmin -->
+        <a
+          v-if="user.Role === 'Superadmin'"
+          @click="setTab('all_users')"
+          :class="
+            activeTab === 'all_users'
+              ? 'bg-indigo-50 text-indigo-700'
+              : 'text-slate-600 hover:bg-slate-50'
+          "
+          class="flex items-center gap-3 px-4 py-2 text-sm rounded-lg font-semibold cursor-pointer transition-colors"
+        >
+          <i
+            class="bi bi-people-fill w-4 h-4 flex items-center justify-center"
+          ></i>
+          Пользователи
+        </a>
+        <!-- Page View Analytics for Superadmin -->
+        <a
+          v-if="user.Role === 'Superadmin'"
+          @click="setTab('page_analytics')"
+          :class="
+            activeTab === 'page_analytics'
+              ? 'bg-indigo-50 text-indigo-700'
+              : 'text-slate-600 hover:bg-slate-50'
+          "
+          class="flex items-center gap-3 px-4 py-2 text-sm rounded-lg font-semibold cursor-pointer transition-colors"
+        >
+          <i
+            class="bi bi-bar-chart-steps w-4 h-4 flex items-center justify-center"
+          ></i>
+          Логи страниц
         </a>
         <a
           v-if="user.Role === 'Superadmin'"

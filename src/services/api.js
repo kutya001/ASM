@@ -197,7 +197,35 @@ export async function loginUser(username, password) {
     await supabase.auth.signOut();
     throw new Error("Ваша учетная запись ожидает проверки Старшим мастером / Администратором");
   }
+
+  // Update last login time
+  await supabase
+    .from("users")
+    .update({ last_login_at: new Date().toISOString() })
+    .eq("id", user.ID);
+
   return user;
+}
+
+export async function adminUpdateUserPassword(targetUserId, newPassword) {
+  const { error } = await supabase.rpc("admin_update_user_password", {
+    target_user_id: targetUserId,
+    new_password: newPassword
+  });
+  handleError(error);
+  return { success: true };
+}
+
+export async function logPageView(pageName, userId, orgId) {
+  if (!userId) return;
+  const { error } = await supabase.from("page_views").insert({
+    user_id: userId,
+    organization_id: orgId || null,
+    page_name: pageName
+  });
+  if (error) {
+    console.warn("Failed to log page view:", error);
+  }
 }
 
 export async function getOrganizations() {

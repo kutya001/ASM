@@ -7,6 +7,9 @@ import UsersTab from '../views/UsersTab.vue';
 import OrganizationsTab from '../views/OrganizationsTab.vue';
 import TicketsTab from '../views/TicketsTab.vue';
 import AuthView from '../views/AuthView.vue';
+import AllUsersTab from '../views/AllUsersTab.vue';
+import PageAnalyticsTab from '../views/PageAnalyticsTab.vue';
+import { logPageView } from '../services/api';
 
 const routes = [
   {
@@ -36,7 +39,19 @@ const routes = [
     path: '/users',
     name: 'users',
     component: UsersTab,
-    meta: { requiresAuth: true, roles: ['Superadmin', 'SenMaster'] }
+    meta: { requiresAuth: true, roles: ['SenMaster'] }
+  },
+  {
+    path: '/all_users',
+    name: 'all_users',
+    component: AllUsersTab,
+    meta: { requiresAuth: true, roles: ['Superadmin'] }
+  },
+  {
+    path: '/page_analytics',
+    name: 'page_analytics',
+    component: PageAnalyticsTab,
+    meta: { requiresAuth: true, roles: ['Superadmin'] }
   },
   {
     path: '/organizations',
@@ -93,6 +108,13 @@ router.beforeEach((to, from, next) => {
     }
   } else {
     next();
+  }
+});
+
+router.afterEach((to) => {
+  const store = useMainStore();
+  if (store.user && to.name && to.name !== 'login') {
+    logPageView(to.name, store.user.ID, store.user.OrganizationID);
   }
 });
 

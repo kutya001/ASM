@@ -27,6 +27,22 @@
                   </button>
                 </div>
                 <div class="grid grid-cols-2 xs:grid-cols-3 gap-2">
+                  <div class="flex flex-col col-span-2 xs:col-span-3" v-if="user && user.Role === 'Superadmin'">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1 text-left">Организация (СТО)</span>
+                    <select
+                      v-model="localFilterOrg"
+                      class="h-8.5 py-0 px-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/15 cursor-pointer transition-all"
+                    >
+                      <option value="">Все организации (СТО)</option>
+                      <option
+                        v-for="org in db.organizations"
+                        :key="org.ID"
+                        :value="org.ID"
+                      >
+                        {{ org.Name }}
+                      </option>
+                    </select>
+                  </div>
                   <div class="flex flex-col">
                     <span
                       class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1"
@@ -343,10 +359,10 @@
               </div>
             </div>
 
-            <!-- List View -->
-            <div class="space-y-3">
+            <!-- List View (Mobile) -->
+            <div class="md:hidden space-y-3">
               <article
-                v-for="r in filteredRecords"
+                v-for="r in localFilteredRecords"
                 :key="r.ID"
                 @click="openRecordModal(r)"
                 class="bg-surface rounded-2xl p-3 shadow-soft border border-slate-200/50 active:scale-[0.98] transition-all cursor-pointer hover:shadow-md hover:border-slate-300 flex flex-col gap-2"
@@ -424,7 +440,7 @@
                       >play_circle</span
                     >
                     <span
-                      class="text-xs font-bold text-slate-650 leading-none truncate"
+                      class="text-xs font-bold text-slate-655 leading-none truncate"
                     >
                       {{ formatDate(r.StartTime).date }}
                       {{ formatDate(r.StartTime).time }}
@@ -458,7 +474,7 @@
                       >stop_circle</span
                     >
                     <span
-                      class="text-xs font-bold text-slate-650 leading-none truncate"
+                      class="text-xs font-bold text-slate-655 leading-none truncate"
                     >
                       {{
                         r.EndTime
@@ -478,7 +494,7 @@
                       >timer</span
                     >
                     <span
-                      class="text-xs font-bold text-slate-650 leading-none truncate"
+                      class="text-xs font-bold text-slate-655 leading-none truncate"
                     >
                       {{
                         r.Status === "Выполнен" && r.EndTime
@@ -493,7 +509,7 @@
                 <div class="grid grid-cols-12 gap-2 items-stretch">
                   <!-- Услуга -->
                   <div
-                    class="col-span-8 bg-slate-50 border border-slate-200/50 text-slate-650 rounded-xl h-8 px-2.5 flex items-center gap-1.5 min-w-0"
+                    class="col-span-8 bg-slate-50 border border-slate-200/50 text-slate-655 rounded-xl h-8 px-2.5 flex items-center gap-1.5 min-w-0"
                   >
                     <span
                       class="material-symbols-outlined text-[13px] text-slate-400 font-bold shrink-0 leading-none"
@@ -593,7 +609,7 @@
               </article>
 
               <div
-                v-if="filteredRecords.length === 0"
+                v-if="localFilteredRecords.length === 0"
                 class="flex flex-col items-center justify-center py-12 text-center"
               >
                 <span
@@ -601,6 +617,150 @@
                   >inbox</span
                 >
                 <p class="text-muted text-sm border-0">Записи не найдены</p>
+              </div>
+            </div>
+
+            <!-- Desktop Table View -->
+            <div class="hidden md:block bg-white border border-slate-150 rounded-2xl shadow-sm overflow-hidden text-left mb-6">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-50/70 border-b border-slate-150 text-[10px] font-black text-slate-400 uppercase tracking-wider select-none">
+                      <th v-if="user && user.Role === 'Superadmin'" class="px-4 py-3 text-center w-10">
+                        <input
+                          type="checkbox"
+                          @change="toggleSelectAllFiltered"
+                          :checked="isAllFilteredSelected"
+                          class="w-3.5 h-3.5 text-indigo-650 rounded border-slate-300 cursor-pointer"
+                        />
+                      </th>
+                      <th @click="sortBy('StartTime')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-24">
+                        <div class="flex items-center gap-1">
+                          Дата
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('StartTime') }}</span>
+                        </div>
+                      </th>
+                      <th v-if="user && user.Role === 'Superadmin'" @click="sortBy('OrganizationID')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-32">
+                        <div class="flex items-center gap-1">
+                          СТО
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('OrganizationID') }}</span>
+                        </div>
+                      </th>
+                      <th @click="sortBy('CarNumber')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-24">
+                        <div class="flex items-center gap-1">
+                          Гос.Номер
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('CarNumber') }}</span>
+                        </div>
+                      </th>
+                      <th @click="sortBy('BrandID')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-36">
+                        <div class="flex items-center gap-1">
+                          Марка/Модель
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('BrandID') }}</span>
+                        </div>
+                      </th>
+                      <th @click="sortBy('ClientName')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors">
+                        <div class="flex items-center gap-1">
+                          Клиент
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('ClientName') }}</span>
+                        </div>
+                      </th>
+                      <th @click="sortBy('MasterID')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-32">
+                        <div class="flex items-center gap-1">
+                          Мастер
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('MasterID') }}</span>
+                        </div>
+                      </th>
+                      <th class="px-4 py-3 max-w-[200px]">Услуги</th>
+                      <th @click="sortBy('TotalAmount')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-28 text-right">
+                        <div class="flex items-center justify-end gap-1">
+                          Сумма
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('TotalAmount') }}</span>
+                        </div>
+                      </th>
+                      <th @click="sortBy('Status')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-24">
+                        <div class="flex items-center gap-1">
+                          Статус
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('Status') }}</span>
+                        </div>
+                      </th>
+                      <th @click="sortBy('IsPaid')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors w-24">
+                        <div class="flex items-center gap-1">
+                          Оплата
+                          <span class="material-symbols-outlined text-xs">{{ getSortIcon('IsPaid') }}</span>
+                        </div>
+                      </th>
+                      <th v-if="user && user.Role === 'Superadmin'" class="px-4 py-3 text-right w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 font-semibold">
+                    <tr v-for="r in localFilteredRecords" :key="r.ID" @click="openRecordModal(r)" class="hover:bg-slate-50/50 transition-colors cursor-pointer" :class="{'opacity-85': r.Status === 'Выполнен', 'opacity-70': r.Status === 'Отменён'}">
+                      <td v-if="user && user.Role === 'Superadmin'" class="px-4 py-2.5 text-center" @click.stop>
+                        <input
+                          type="checkbox"
+                          :value="r.ID"
+                          v-model="selectedRecordIDs"
+                          class="w-3.5 h-3.5 text-indigo-650 rounded border-slate-300 cursor-pointer"
+                        />
+                      </td>
+                      <td class="px-4 py-2.5 whitespace-nowrap text-slate-800">
+                        <div>{{ formatDate(r.StartTime).date }}</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">{{ formatDate(r.StartTime).time }}</div>
+                      </td>
+                      <td v-if="user && user.Role === 'Superadmin'" class="px-4 py-2.5">
+                        <span class="bg-indigo-50 border border-indigo-100/30 text-indigo-750 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                          {{ getOrgName(r.OrganizationID) }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-2.5 font-mono uppercase tracking-wider text-slate-900 font-bold whitespace-nowrap">
+                        {{ r.CarNumber }}
+                      </td>
+                      <td class="px-4 py-2.5 text-slate-800">
+                        <div class="font-bold">{{ getBrandName(r.BrandID) }}</div>
+                        <div class="text-[10px] text-slate-450 mt-0.5">{{ getModelName(r.ModelID) }}</div>
+                      </td>
+                      <td class="px-4 py-2.5 text-slate-700">
+                        <div class="font-bold">{{ r.ClientName || '—' }}</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">{{ r.Phone || '' }}</div>
+                      </td>
+                      <td class="px-4 py-2.5 text-slate-700 whitespace-nowrap">
+                        {{ getMasterName(r.MasterID) }}
+                      </td>
+                      <td class="px-4 py-2.5 max-w-[200px] truncate text-slate-500 font-normal" :title="getRecordServicesString(r)">
+                        {{ getRecordServicesString(r) }}
+                      </td>
+                      <td class="px-4 py-2.5 text-slate-900 font-heading font-black text-right whitespace-nowrap">
+                        {{ Number(r.TotalAmount || 0).toLocaleString() }} KGS
+                      </td>
+                      <td class="px-4 py-2.5" @click.stop>
+                        <button @click="toggleStatusDirectly(r)" class="h-7 px-2.5 rounded-xl font-bold text-[10px] uppercase border-none cursor-pointer flex items-center gap-1 transition shadow-xs" :class="statusButtonClasses(r.Status)">
+                          <span class="material-symbols-outlined text-xs">{{ statusIcon(r.Status) }}</span>
+                          {{ r.Status }}
+                        </button>
+                      </td>
+                      <td class="px-4 py-2.5" @click.stop>
+                        <button @click="quickPaymentToggle(r)" class="h-7 px-2 rounded-xl font-bold text-[10px] uppercase border-none cursor-pointer flex items-center gap-1 transition shadow-xs" :class="r.IsPaid ? 'bg-emerald-600 text-white' : 'bg-rose-50 text-rose-700 border border-rose-200'">
+                          <span class="material-symbols-outlined text-xs">{{ r.IsPaid ? 'check_circle' : 'cancel' }}</span>
+                          {{ r.IsPaid ? 'Оплачен' : 'Нет' }}
+                        </button>
+                      </td>
+                      <td v-if="user && user.Role === 'Superadmin'" class="px-4 py-2.5 text-right font-normal" @click.stop>
+                        <button
+                          type="button"
+                          @click="$emit('del-row', 'Records', r.ID, 'records')"
+                          class="w-7 h-7 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-lg flex items-center justify-center cursor-pointer transition border-none p-0"
+                          title="Удалить запись"
+                        >
+                          <span class="material-symbols-outlined text-[15px] font-semibold">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr v-if="localFilteredRecords.length === 0">
+                      <td :colspan="user && user.Role === 'Superadmin' ? 12 : 9" class="text-center py-12 text-slate-400 italic">
+                        Записи не найдены
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -644,7 +804,11 @@ export default {
       massNewPaymentStatus: "",
       massNewMasterID: "",
       massNewBrandID: "",
-      massNewModelID: ""
+      massNewModelID: "",
+      // Local filter & sorting properties
+      localFilterOrg: "",
+      sortKey: "StartTime",
+      sortAsc: false
     };
   },
   computed: {
@@ -656,6 +820,37 @@ export default {
       if (!this.db || !this.db.models) return [];
       if (!this.advFilterBrand) return this.db.models;
       return this.db.models.filter(m => String(m.BrandID) === String(this.advFilterBrand));
+    },
+    localFilteredRecords() {
+      let list = [...this.filteredRecords];
+      
+      // Filter by organization for Superadmin
+      if (this.user && this.user.Role === 'Superadmin' && this.localFilterOrg) {
+        list = list.filter(r => String(r.OrganizationID) === String(this.localFilterOrg));
+      }
+      
+      // Sort
+      if (this.sortKey) {
+        list.sort((a, b) => {
+          let valA = this.getSortValue(a, this.sortKey);
+          let valB = this.getSortValue(b, this.sortKey);
+          
+          if (typeof valA === 'string' && typeof valB === 'string') {
+            return this.sortAsc 
+              ? valA.localeCompare(valB)
+              : valB.localeCompare(valA);
+          } else {
+            return this.sortAsc
+              ? (valA - valB)
+              : (valB - valA);
+          }
+        });
+      }
+      return list;
+    },
+    isAllFilteredSelected() {
+      if (this.localFilteredRecords.length === 0) return false;
+      return this.localFilteredRecords.every(r => this.selectedRecordIDs.includes(r.ID));
     }
   },
   methods: {
@@ -700,7 +895,7 @@ export default {
     },
     selectAllFiltered() {
       // Choose only those that are visible in filtered list
-      this.selectedRecordIDs = this.filteredRecords.map(r => r.ID);
+      this.selectedRecordIDs = this.localFilteredRecords.map(r => r.ID);
     },
     applyMassChanges() {
       if (!this.selectedRecordIDs || this.selectedRecordIDs.length === 0) {
@@ -820,6 +1015,63 @@ export default {
       if (!phone) return "";
       const normalized = this.formatPhoneForLink(phone);
       return "https://wa.me/" + normalized.replace("+", "");
+    },
+    sortBy(key) {
+      if (this.sortKey === key) {
+        this.sortAsc = !this.sortAsc;
+      } else {
+        this.sortKey = key;
+        this.sortAsc = true;
+      }
+    },
+    getSortIcon(key) {
+      if (this.sortKey !== key) return "unfold_more";
+      return this.sortAsc ? "expand_less" : "expand_more";
+    },
+    getSortValue(record, key) {
+      if (key === 'StartTime') {
+        return new Date(record.StartTime || 0).getTime();
+      }
+      if (key === 'TotalAmount') {
+        return Number(record.TotalAmount || 0);
+      }
+      if (key === 'IsPaid') {
+        return record.IsPaid ? 1 : 0;
+      }
+      if (key === 'CarNumber') {
+        return String(record.CarNumber || '').toLowerCase();
+      }
+      if (key === 'ClientName') {
+        return String(record.ClientName || '').toLowerCase();
+      }
+      if (key === 'Status') {
+        return String(record.Status || '').toLowerCase();
+      }
+      if (key === 'OrganizationID') {
+        return this.getOrgName(record.OrganizationID).toLowerCase();
+      }
+      if (key === 'BrandID') {
+        return this.getBrandName(record.BrandID).toLowerCase();
+      }
+      if (key === 'MasterID') {
+        return this.getMasterName(record.MasterID).toLowerCase();
+      }
+      return record[key];
+    },
+    getOrgName(id) {
+      if (!this.db || !this.db.organizations) return '—';
+      let org = this.db.organizations.find(o => o.ID == id);
+      return org ? org.Name : '—';
+    },
+    toggleSelectAllFiltered() {
+      if (this.isAllFilteredSelected) {
+        const filteredIds = this.localFilteredRecords.map(r => r.ID);
+        this.selectedRecordIDs = this.selectedRecordIDs.filter(id => !filteredIds.includes(id));
+      } else {
+        const filteredIds = this.localFilteredRecords.map(r => r.ID);
+        const union = new Set([...this.selectedRecordIDs, ...filteredIds]);
+        this.selectedRecordIDs = Array.from(union);
+      }
     }
   }
 };

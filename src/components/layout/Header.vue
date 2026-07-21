@@ -176,6 +176,10 @@ export default {
           return this.refsSubTabTitle ? `Справочники — ${this.refsSubTabTitle}` : "Справочники";
         case "users":
           return "Персонал";
+        case "all_users":
+          return "Пользователи";
+        case "page_analytics":
+          return "Логи страниц";
         case "applications":
           return "Заявки";
         default:
@@ -191,7 +195,10 @@ export default {
         case "refs":
           return "bi-tools";
         case "users":
+        case "all_users":
           return "bi-people-fill";
+        case "page_analytics":
+          return "bi-bar-chart-steps";
         case "applications":
           return "bi-envelope-paper-fill";
         default:
@@ -215,6 +222,7 @@ export default {
         case "applications":
           return "Поиск заявок...";
         case "users":
+        case "all_users":
           return "Поиск по штату...";
         case "records":
           return "Поиск госномер/имя...";

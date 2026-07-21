@@ -21,6 +21,7 @@ create table if not exists users (
   role text not null default 'Master',
   status text not null default 'Pending',
   organization_id uuid references organizations(id) on delete cascade,
+  last_login_at timestamptz,
   created_at timestamptz default now()
 );
 
@@ -115,6 +116,15 @@ create table if not exists support_tickets (
   created_at timestamptz default now()
 );
 
+-- 8.7. Page Views (Логи кликов страниц)
+create table if not exists page_views (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade not null,
+  organization_id uuid references organizations(id) on delete cascade,
+  page_name text not null,
+  created_at timestamptz default now()
+);
+
 -- Enable Realtime publication
 begin;
   drop publication if exists supabase_realtime;
@@ -128,7 +138,8 @@ begin;
     game_records, 
     records,
     subscription_logs,
-    support_tickets;
+    support_tickets,
+    page_views;
 commit;
 
 -- 9. Trigger to sync auth.users to public.users
@@ -309,3 +320,26 @@ create policy "Allow update support_tickets for owner or Superadmin" on support_
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
     or user_id = auth.uid()
   );
+
+-- 15. Page Views RLS & Policies
+alter table page_views enable row level security;
+
+create policy "Allow insert page_views for authenticated" on page_views for insert
+  with check (auth.uid() is not null);
+
+create policy "Allow select page_views for Superadmin" on page_views for select
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
+
+-- 16. Admin Update User Password RPC (Superadmin power)
+create or replace function public.admin_update_user_password(target_user_id uuid, new_password text)
+returns void as $$
+begin
+  if (auth.jwt() -> 'app_metadata' ->> 'role') != 'Superadmin' then
+    raise exception 'Unauthorized: Only Superadmins can change passwords';
+  end if;
+
+  update auth.users
+  set encrypted_password = crypt(new_password, gen_salt('bf'))
+  where id = target_user_id;
+end;
+$$ language plpgsql security definer;
