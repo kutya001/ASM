@@ -593,6 +593,15 @@ export const useMainStore = defineStore("main", {
         if (table === "organization_models") {
           result.ID = `${dbRow.organization_id}_${dbRow.model_id}`;
         }
+        if (table === "records" && result.ServicesJSON) {
+          if (typeof result.ServicesJSON === "string") {
+            try {
+              result.ServicesJSON = JSON.parse(result.ServicesJSON);
+            } catch (e) {
+              result.ServicesJSON = [];
+            }
+          }
+        }
         return result;
       }
 

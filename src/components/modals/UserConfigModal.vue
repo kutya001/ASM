@@ -72,20 +72,6 @@
               class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 shadow-sm focus:border-indigo-500"
             />
           </div>
-
-          <!-- Password field for Superadmin -->
-          <div v-if="isGlobalAdmin">
-            <label
-              class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2"
-              >Изменить пароль</label
-            >
-            <input
-              type="password"
-              v-model="userConfigForm.Password"
-              placeholder="Введите новый пароль"
-              class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-sm text-slate-800 shadow-sm focus:border-indigo-500"
-            />
-          </div>
         </div>
         <div
           class="modal-footer border-t border-slate-100 px-6 py-4 bg-white flex flex-col sm:flex-row gap-2 sm:gap-3"
@@ -122,7 +108,7 @@ import { formatPhoneInput } from "../../utils/helpers";
 export default {
   data() {
     return {
-      userConfigForm: { ID: "", Role: "Master", Name: "", Phone: "+996 ", Password: "" },
+      userConfigForm: { ID: "", Role: "Master", Name: "", Phone: "+996 " },
       isSavingUserConfig: false,
       bsModal: null,
     };
@@ -148,7 +134,6 @@ export default {
         Name: u.Name || "",
         Phone: u.Phone || "+996 ",
         OrganizationID: u.OrganizationID || "",
-        Password: "", // Do not prefill password for security
       };
       if (this.bsModal) this.bsModal.show();
     },
@@ -165,9 +150,6 @@ export default {
         let idx = this.store.db.users.findIndex((x) => x.ID === obj.ID);
         
         const updateData = { Role: obj.Role, Name: obj.Name, Phone: obj.Phone };
-        if (obj.Password) {
-          updateData.Password = obj.Password;
-        }
         if (this.isGlobalAdmin) {
           updateData.OrganizationID = obj.OrganizationID;
         }
@@ -176,9 +158,6 @@ export default {
           this.store.db.users[idx].Role = obj.Role;
           this.store.db.users[idx].Name = obj.Name;
           this.store.db.users[idx].Phone = obj.Phone;
-          if (obj.Password) {
-            this.store.db.users[idx].Password = obj.Password;
-          }
           if (this.isGlobalAdmin) {
             this.store.db.users[idx].OrganizationID = obj.OrganizationID;
           }

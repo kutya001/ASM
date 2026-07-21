@@ -4,15 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 // SUPABASE CLIENT
 // ========================
 
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL ||
-  "https://cddeypycepqycsvlqunp.supabase.co";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkZGV5cHljZXBxeWNzdmxxdW5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2MTg0MDUsImV4cCI6MjA5ODE5NDQwNX0.rzdZzmIc_IvY5pys5Dr2u2fEQzYUupOMC2whVZTUh84";
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error("Missing Supabase URL or Anonymous Key in environment variables.");
+}
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient(SUPABASE_URL || "", SUPABASE_ANON_KEY || "");
 
 // ========================
 // FIELD MAPPINGS (DB snake_case ↔ App PascalCase)

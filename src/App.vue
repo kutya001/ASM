@@ -1,6 +1,6 @@
 <template>
   <WelcomeScreen
-    v-if="showWelcome"
+    v-if="showWelcome && user"
     :show="showWelcome"
     @close="dismissWelcome"
   />
@@ -26,7 +26,10 @@
     </div>
   </div>
 
-  <AuthView v-if="!user" />
+  <!-- If login view, just render router-view without layout -->
+  <div v-if="!user || $route.name === 'login'" class="w-full h-screen bg-slate-900">
+    <router-view />
+  </div>
 
   <!-- Blocking Screen if subscription has expired -->
   <div
@@ -117,29 +120,16 @@
             <strong>Ошибка при загрузке данных:</strong> {{ initError }}
           </div>
 
-          <div
-            v-if="activeTab === 'records'"
-            class="max-w-2xl mx-auto w-full space-y-4 pb-20"
-          >
-            <RecordsTab
-              :filtered-records="filteredRecords"
-              :is-filters-expanded="isFiltersExpanded"
-              :active-statuses="activeStatuses"
+          <router-view v-slot="{ Component }">
+            <component 
+              :is="Component"
+              v-bind="routeProps"
               @toggle-status-filter="toggleStatus"
-              :adv-filter-master="advFilterMaster"
               @update:adv-filter-master="advFilterMaster = $event"
-              :adv-filter-service="advFilterService"
               @update:adv-filter-service="advFilterService = $event"
-              :adv-filter-date="advFilterDate"
               @update:adv-filter-date="advFilterDate = $event"
-              :adv-filter-brand="advFilterBrand"
               @update:adv-filter-brand="advFilterBrand = $event"
-              :adv-filter-model="advFilterModel"
               @update:adv-filter-model="advFilterModel = $event"
-              :masters-list="mastersList"
-              :sorted-services="sortedServices"
-              :user="user"
-              :db="db"
               @clear-filters="clearAllFilters"
               @open-record="openRecordModal"
               @toggle-status="toggleStatusDirectly"
@@ -147,56 +137,15 @@
               @set-all-statuses="setAllStatuses"
               @del-row="delRow"
               @mass-update="handleMassUpdate"
+              @open-ref-modal="openRefModal"
+              @open-bulk-modal="openBulkUploadModal"
+              @import-modal-toggle="isImportModalOpen = $event"
+              @sub-tab-changed="refsSubTabTitle = $event"
+              @approve-user="approveUser"
+              @open-user-config="openUserConfigModal"
+              ref="activeTabRef"
             />
-          </div>
-
-          <DashboardTab
-            v-if="activeTab === 'dashboard'"
-            :db="db"
-            :user="user"
-            :is-filters-expanded="isFiltersExpanded"
-            :current-user-master-i-d="currentUserMasterID"
-            :masters-list="mastersList"
-            :sorted-services="sortedServices"
-            :get-brand-name="getBrandName"
-            :get-master-name="getMasterName"
-            :get-service-name="getServiceName"
-            :get-service-price="getServicePrice"
-            :search-query="searchQuery"
-          />
-
-          <RefsTab
-            v-if="activeTab === 'refs' && user.Role !== 'Master'"
-            ref="refsTab"
-            :db="db"
-            :grouped-models="groupedModels"
-            :get-brand-name="getBrandName"
-            :search-query="searchQuery"
-            @open-ref-modal="openRefModal"
-            @open-bulk-modal="openBulkUploadModal"
-            @del-row="delRow"
-            @sub-tab-changed="refsSubTabTitle = $event"
-            @import-modal-toggle="isImportModalOpen = $event"
-          />
-
-          <UsersTab
-            v-if="activeTab === 'users' && (user.Role === 'Superadmin' || user.Role === 'SenMaster')"
-            :db="db"
-            :search-query="searchQuery"
-            :is-filters-expanded="isFiltersExpanded"
-            @approve-user="approveUser"
-            @open-user-config="openUserConfigModal"
-          />
-
-          <OrganizationsTab
-            v-if="activeTab === 'organizations' && user.Role === 'Superadmin'"
-            :db="db"
-          />
-
-          <TicketsTab
-            v-if="activeTab === 'tickets'"
-            ref="ticketsTab"
-          />
+          </router-view>
         </div>
 
         <div
@@ -247,14 +196,7 @@ import RecordModal from "./components/modals/RecordModal.vue";
 import BulkUploadModal from "./components/modals/BulkUploadModal.vue";
 import RefModal from "./components/modals/RefModal.vue";
 import UserConfigModal from "./components/modals/UserConfigModal.vue";
-import UsersTab from "./views/UsersTab.vue";
-import RefsTab from "./views/RefsTab.vue";
-import DashboardTab from "./views/DashboardTab.vue";
-import RecordsTab from "./views/RecordsTab.vue";
-import OrganizationsTab from "./views/OrganizationsTab.vue";
-import TicketsTab from "./views/TicketsTab.vue";
 import WelcomeScreen from "./views/WelcomeScreen.vue";
-import AuthView from "./views/AuthView.vue";
 import Sidebar from "./components/layout/Sidebar.vue";
 import Header from "./components/layout/Header.vue";
 import MobileNav from "./components/layout/MobileNav.vue";
@@ -268,19 +210,11 @@ export default {
     BulkUploadModal,
     RefModal,
     UserConfigModal,
-    UsersTab,
-    RefsTab,
-    DashboardTab,
-    RecordsTab,
-    OrganizationsTab,
-    TicketsTab,
     WelcomeScreen,
-    AuthView,
     Sidebar,
     Header,
     MobileNav,
     GameContainer,
-
   },
   data() {
     return {
@@ -309,8 +243,16 @@ export default {
         }
       }
     },
-    activeTab() {
+    activeTab(newTab) {
       this.isImportModalOpen = false;
+      if (this.$route && this.$route.name !== newTab) {
+        this.$router.push({ name: newTab }).catch(() => {});
+      }
+    },
+    $route(to) {
+      if (to && to.name && this.activeTab !== to.name) {
+        this.activeTab = to.name;
+      }
     }
   },
   computed: {
@@ -327,6 +269,29 @@ export default {
       "sortedBrands",
       "sortedServices",
     ]),
+    routeProps() {
+      return {
+        filteredRecords: this.filteredRecords,
+        isFiltersExpanded: this.isFiltersExpanded,
+        activeStatuses: this.activeStatuses,
+        advFilterMaster: this.advFilterMaster,
+        advFilterService: this.advFilterService,
+        advFilterDate: this.advFilterDate,
+        advFilterBrand: this.advFilterBrand,
+        advFilterModel: this.advFilterModel,
+        mastersList: this.mastersList,
+        sortedServices: this.sortedServices,
+        user: this.user,
+        db: this.db,
+        currentUserMasterID: this.currentUserMasterID,
+        getBrandName: this.getBrandName,
+        getMasterName: this.getMasterName,
+        getServiceName: this.getServiceName,
+        getServicePrice: this.getServicePrice,
+        searchQuery: this.searchQuery,
+        groupedModels: this.groupedModels,
+      };
+    },
     isAllStatusesActive() {
       return this.activeStatuses && this.activeStatuses.length === 3;
     },
@@ -650,8 +615,8 @@ export default {
     handleOpenTicketsCreate() {
       this.activeTab = 'tickets';
       this.$nextTick(() => {
-        if (this.$refs.ticketsTab) {
-          this.$refs.ticketsTab.openCreateModal();
+        if (this.$refs.activeTabRef && typeof this.$refs.activeTabRef.openCreateModal === 'function') {
+          this.$refs.activeTabRef.openCreateModal();
         }
       });
     },
@@ -723,8 +688,8 @@ export default {
       if (this.activeTab === "records") {
         this.openRecordModal(-1);
       } else if (this.activeTab === "refs") {
-        if (this.$refs.refsTab) {
-          this.$refs.refsTab.handleFABAction();
+        if (this.$refs.activeTabRef && typeof this.$refs.activeTabRef.handleFABAction === 'function') {
+          this.$refs.activeTabRef.handleFABAction();
         }
       } else if (this.activeTab === "users") {
         this.openUserConfigModal(-1);
