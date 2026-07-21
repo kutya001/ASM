@@ -104,7 +104,7 @@
                       <!-- Call component -->
                       <a
                         :href="'tel:' + formatPhoneForLink(recordForm.Phone)"
-                        class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 hover:text-white bg-indigo-50 hover:bg-indigo-650 px-2.5 py-1 rounded-lg transition-all border border-indigo-200/50"
+                        class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 hover:text-white bg-indigo-50 hover:bg-indigo-600 px-2.5 py-1 rounded-lg transition-all border border-indigo-200/50"
                         title="Позвонить"
                       >
                         <i class="bi bi-telephone-fill text-[9px]"></i>

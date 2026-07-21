@@ -502,7 +502,7 @@
           <button @click="editingService = null" class="h-11 px-4 border border-slate-200 text-slate-655 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs transition cursor-pointer">
             Закрыть
           </button>
-          <button v-if="store.user.Role !== 'Master'" @click="isPriceEditingMode = true" class="flex-1 h-11 bg-indigo-655 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition cursor-pointer border-none shadow-md shadow-indigo-100">
+          <button v-if="store.user.Role !== 'Master'" @click="isPriceEditingMode = true" class="flex-1 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition cursor-pointer border-none shadow-md shadow-indigo-100">
             Изменить
           </button>
         </div>

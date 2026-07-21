@@ -101,7 +101,7 @@
           </button>
           <button
             type="button"
-            class="flex-1 px-5 py-3 bg-indigo-650 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 border-none cursor-pointer"
+            class="flex-1 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 border-none cursor-pointer"
             @click="isEditing = true"
           >
             Изменить
