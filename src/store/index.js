@@ -249,7 +249,10 @@ export const useMainStore = defineStore("main", {
       if (!this.user) return;
       this.loading = true;
       try {
-        let d = await getInitData(this.user.Role, this.user.ID, this.user.OrganizationID);
+        const role = this.user.Role || this.user.role;
+        const id = this.user.ID || this.user.id;
+        const orgId = this.user.OrganizationID || this.user.organization_id;
+        let d = await getInitData(role, id, orgId);
 
         // Parse ServicesJSON for records
         d.records.forEach((r) => {
@@ -563,7 +566,7 @@ export const useMainStore = defineStore("main", {
       };
 
       const FIELD_MAPS = {
-        users: { id: "ID", username: "Username", password: "Password", name: "Name", phone: "Phone", role: "Role", status: "Status", organization_id: "OrganizationID" },
+        users: { id: "ID", username: "Username", password: "Password", name: "Name", phone: "Phone", role: "Role", status: "Status", organization_id: "OrganizationID", created_at: "CreatedAt", last_login_at: "LastLoginAt" },
         records: { id: "ID", client_name: "ClientName", phone: "Phone", car_number: "CarNumber", brand_id: "BrandID", model_id: "ModelID", master_id: "MasterID", start_time: "StartTime", end_time: "EndTime", status: "Status", services_json: "ServicesJSON", additional_services: "AdditionalServices", total_amount: "TotalAmount", comment: "Comment", is_paid: "IsPaid", organization_id: "OrganizationID" },
         services: { id: "ID", name: "Name", price: "Price", organization_id: "OrganizationID", category_id: "CategoryID", global_service_id: "GlobalServiceID", is_custom: "IsCustom" },
         brands: { id: "ID", name: "Name" },

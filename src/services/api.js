@@ -21,7 +21,8 @@ const FIELD_MAPS = {
   users: {
     id: "ID", username: "Username", password: "Password",
     name: "Name", phone: "Phone", role: "Role", status: "Status",
-    organization_id: "OrganizationID",
+    organization_id: "OrganizationID", created_at: "CreatedAt",
+    last_login_at: "LastLoginAt",
   },
   records: {
     id: "ID", client_name: "ClientName", phone: "Phone", car_number: "CarNumber",
@@ -385,7 +386,7 @@ export async function getInitData(role, userId, orgId) {
 
   const recordsQuery = supabase.from("records").select("*").order("start_time", { ascending: false });
   const servicesQuery = supabase.from("services").select("*").order("name", { ascending: true });
-  const usersQuery = supabase.from("users").select("id, username, password, role, status, name, phone, organization_id");
+  const usersQuery = supabase.from("users").select("id, username, password, role, status, name, phone, organization_id, created_at, last_login_at");
   const brandsQuery = supabase.from("brands").select("*").order("name", { ascending: true });
   const modelsQuery = supabase.from("models").select("*").order("name", { ascending: true });
   const welcomescreensQuery = supabase.from("welcome_screens").select("*");

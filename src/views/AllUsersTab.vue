@@ -369,7 +369,7 @@ export default {
 
       // Filter by Org
       if (this.filterOrg !== "all") {
-        list = list.filter(u => String(u.OrganizationID) === String(this.filterOrg));
+        list = list.filter(u => String(u.OrganizationID || u.organization_id) === String(this.filterOrg));
       }
 
       // Filter by Search Query

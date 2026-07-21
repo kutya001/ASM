@@ -237,7 +237,8 @@ export default {
 
       // Filter by organization if not Superadmin
       if (!this.isGlobalAdmin && this.store.user) {
-        list = list.filter(u => u.OrganizationID === this.store.user.OrganizationID);
+        const userOrgId = this.store.user.OrganizationID || this.store.user.organization_id;
+        list = list.filter(u => (u.OrganizationID || u.organization_id) === userOrgId);
       }
 
       // Filter by role
