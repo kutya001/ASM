@@ -350,6 +350,7 @@ export default {
   },
   data() {
     return {
+      usersList: [],
       searchQueryLocal: "",
       filterRole: "all",
       filterStatus: "all",
@@ -366,7 +367,11 @@ export default {
       return useMainStore();
     },
     filteredUsers() {
-      let list = this.db.users || [];
+      let list = this.usersList.length > 0
+        ? this.usersList
+        : (this.store.db && this.store.db.users && this.store.db.users.length > 0)
+          ? this.store.db.users
+          : (this.db.users || []);
 
       // Filter by Role
       if (this.filterRole !== "all") {
@@ -414,7 +419,11 @@ export default {
 
         if (error) throw error;
         const mapped = (data || []).map(u => toApp("users", u));
+        this.usersList = mapped;
         this.store.db.users = mapped;
+        if (this.db) {
+          this.db.users = mapped;
+        }
       } catch (err) {
         console.error("Failed to fetch users:", err);
       } finally {
@@ -425,9 +434,10 @@ export default {
       this.visiblePasswords[id] = !this.visiblePasswords[id];
     },
     getOrgName(orgId) {
-      if (!this.db.organizations) return "—";
-      const org = this.db.organizations.find(o => (o.ID || o.id) === orgId);
-      return org ? org.Name : "—";
+      if (!orgId) return "Глобальный (Без СТО)";
+      const orgs = (this.store.db && this.store.db.organizations) || this.db.organizations || [];
+      const org = orgs.find(o => String(o.ID || o.id) === String(orgId));
+      return org ? org.Name || org.name : "—";
     },
     formatSubDate(dateStr) {
       if (!dateStr) return "—";

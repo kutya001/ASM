@@ -138,7 +138,7 @@
 </template>
 
 <script>
-import { supabase } from '../services/api';
+import { supabase, toApp } from '../services/api';
 import { useMainStore } from '../store';
 
 export default {
@@ -148,7 +148,8 @@ export default {
       pageViews: [],
       loading: true,
       filterPage: "all",
-      hoveredBarIndex: null
+      hoveredBarIndex: null,
+      realtimeChannel: null
     };
   },
   computed: {
@@ -212,22 +213,48 @@ export default {
   },
   mounted() {
     this.fetchData();
+    this.subscribeRealtime();
+  },
+  beforeUnmount() {
+    if (this.realtimeChannel) {
+      supabase.removeChannel(this.realtimeChannel);
+    }
   },
   methods: {
     async fetchData() {
       this.loading = true;
       try {
-        const { data, error } = await supabase
+        const { data: viewsData, error: viewsErr } = await supabase
           .from("page_views")
           .select("*")
           .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (viewsErr) throw viewsErr;
+
+        // Auto-fetch users if not present in store
+        if (!this.store.db.users || this.store.db.users.length === 0) {
+          const { data: uData } = await supabase
+            .from("users")
+            .select("id, username, name, phone, role, status, organization_id");
+          if (uData) {
+            this.store.db.users = uData.map(u => toApp("users", u));
+          }
+        }
+
+        // Auto-fetch organizations if not present in store
+        if (!this.store.db.organizations || this.store.db.organizations.length === 0) {
+          const { data: oData } = await supabase
+            .from("organizations")
+            .select("id, name");
+          if (oData) {
+            this.store.db.organizations = oData.map(o => toApp("organizations", o));
+          }
+        }
 
         const usersList = this.store.db.users || [];
         const orgsList = this.store.db.organizations || [];
 
-        const enrichedLogs = (data || []).map(log => {
+        const enrichedLogs = (viewsData || []).map(log => {
           const user = usersList.find(u => String(u.ID || u.id) === String(log.user_id));
           const org = orgsList.find(o => String(o.ID || o.id) === String(log.organization_id));
           return {
@@ -243,6 +270,28 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    subscribeRealtime() {
+      this.realtimeChannel = supabase
+        .channel("page_views_realtime")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "page_views" },
+          (payload) => {
+            const newLog = payload.new;
+            const usersList = this.store.db.users || [];
+            const orgsList = this.store.db.organizations || [];
+            const user = usersList.find(u => String(u.ID || u.id) === String(newLog.user_id));
+            const org = orgsList.find(o => String(o.ID || o.id) === String(newLog.organization_id));
+            const enriched = {
+              ...newLog,
+              users: user ? { name: user.Name || user.name || '', username: user.Username || user.username || '' } : null,
+              organizations: org ? { name: org.Name || org.name || '' } : null
+            };
+            this.pageViews.unshift(enriched);
+          }
+        )
+        .subscribe();
     },
     translatePageName(name) {
       const map = {
