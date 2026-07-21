@@ -148,6 +148,7 @@ returns trigger as $$
 declare
   user_role text;
   user_status text;
+  org_id text;
 begin
   user_role := coalesce(new.raw_user_meta_data->>'role', 'Master');
   user_status := case 
@@ -155,11 +156,16 @@ begin
     when user_role = 'Superadmin' then 'Approved'
     else 'Pending' 
   end;
+  org_id := new.raw_user_meta_data->>'organization_id';
 
-  -- Update auth.users app_metadata for JWT claims
+  -- Update auth.users app_metadata for JWT claims (secure app_metadata)
   update auth.users
   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || 
-                          jsonb_build_object('role', user_role, 'status', user_status)
+                          jsonb_build_object(
+                            'role', user_role, 
+                            'status', user_status,
+                            'organization_id', org_id
+                          )
   where id = new.id;
 
   -- Insert into public.users
@@ -171,7 +177,7 @@ begin
     coalesce(new.raw_user_meta_data->>'phone', ''),
     user_role,
     user_status,
-    (new.raw_user_meta_data->>'organization_id')::uuid
+    org_id::uuid
   );
   return new;
 end;
@@ -194,9 +200,17 @@ returns void as $$
 begin
   update auth.users
   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || 
-                          jsonb_build_object('role', new_role, 'status', new_status),
+                          jsonb_build_object(
+                            'role', new_role, 
+                            'status', new_status,
+                            'organization_id', new_org_id
+                          ),
       raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || 
-                           jsonb_build_object('organization_id', new_org_id, 'name', new_name, 'phone', new_phone)
+                           jsonb_build_object(
+                             'organization_id', new_org_id, 
+                             'name', new_name, 
+                             'phone', new_phone
+                           )
   where id = target_user_id;
 
   update public.users
@@ -231,7 +245,7 @@ create policy "Allow write organizations for Superadmin" on organizations for al
 create policy "Allow select users for same org or Superadmin" on users for select
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin' 
-    or organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
+    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
     or id = auth.uid()
   );
 create policy "Allow insert users for everyone" on users for insert with check (true);
@@ -241,7 +255,7 @@ create policy "Allow update users for self, Superadmin, or SenMaster" on users f
     or (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
     or (
       (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster' 
-      and organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
+      and organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
     )
   );
 
@@ -249,14 +263,14 @@ create policy "Allow update users for self, Superadmin, or SenMaster" on users f
 create policy "Allow select services for same org or Superadmin" on services for select
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin' 
-    or organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
+    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
   );
 create policy "Allow write services for Superadmin or SenMaster" on services for all
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
     or (
       (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster' 
-      and organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
+      and organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
     )
   );
 
@@ -284,11 +298,11 @@ create policy "Allow insert game_records for authenticated" on game_records for 
 create policy "Allow all records for same org or Superadmin" on records for all
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
-    or organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
+    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
   )
   with check (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
-    or organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
+    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
   );
 
 -- 13. Subscription Logs RLS & Policies
@@ -297,7 +311,7 @@ alter table subscription_logs enable row level security;
 create policy "Allow select subscription_logs for same org or Superadmin" on subscription_logs for select
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
-    or organization_id = (auth.jwt() -> 'user_metadata' ->> 'organization_id')::uuid
+    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
   );
 
 create policy "Allow write subscription_logs for Superadmin" on subscription_logs for all
