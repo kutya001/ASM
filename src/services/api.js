@@ -218,6 +218,9 @@ export async function adminUpdateUserPassword(targetUserId, newPassword) {
 
 export async function logPageView(pageName, userId, orgId) {
   if (!userId) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return; // Skip if session is not yet loaded or authenticated
+  
   const { error } = await supabase.from("page_views").insert({
     user_id: userId,
     organization_id: orgId || null,
