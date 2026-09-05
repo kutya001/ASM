@@ -115,10 +115,14 @@
             </button>
 
             <button
-              @click="triggerCreateTicket"
+              @click="openTicketsList"
               class="flex items-center justify-center gap-2 w-full py-2.5 bg-amber-50 text-amber-700 hover:bg-amber-100/70 rounded-xl font-bold transition border-none cursor-pointer mb-2"
             >
-              <i class="bi bi-chat-left-text text-base"></i> Заявка администратору
+              <i class="bi bi-chat-left-text text-base"></i>
+              <span>{{ user && user.Role === 'Superadmin' ? 'Все заявки пользователей' : 'Заявки администратору' }}</span>
+              <span v-if="openTicketsCount > 0" class="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">
+                {{ openTicketsCount }}
+              </span>
             </button>
 
             <button
@@ -265,23 +269,121 @@
                 </div>
               </div>
 
-              <!-- Payment instruction -->
-              <div class="p-3 bg-indigo-50/40 border border-indigo-100/50 rounded-xl space-y-1.5 text-xs text-indigo-900 leading-relaxed font-semibold">
-                <div class="text-[9px] font-black uppercase text-indigo-700 tracking-wider">Инструкция по оплате</div>
-                <div>Базовая стоимость (до 3 сотрудников) — <span class="font-extrabold text-indigo-750">1500 сом / мес</span>.</div>
-                <div>За каждого сотрудника сверх лимита — <span class="font-extrabold text-indigo-750">500 сом / мес</span>.</div>
-                <div>Нажмите кнопку ниже, чтобы перейти в чат поддержки WhatsApp и прикрепить скриншот чека об оплате. Администратор проверит транзакцию и продлит подписку.</div>
+              <!-- Renewal Form View -->
+              <div v-if="isRenewingSubscription" class="pt-3 border-t border-slate-100 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-black uppercase text-indigo-700 tracking-wider flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">autorenew</span>
+                    Заявка на продление
+                  </span>
+                  <button
+                    type="button"
+                    @click="isRenewingSubscription = false"
+                    class="text-[10px] font-bold text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer p-0"
+                  >
+                    Отмена
+                  </button>
+                </div>
+
+                <!-- Months selection -->
+                <div>
+                  <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    Срок продления
+                  </label>
+                  <div class="grid grid-cols-4 gap-1.5">
+                    <button
+                      v-for="m in [1, 3, 6, 12]"
+                      :key="m"
+                      type="button"
+                      @click="renewalMonths = m"
+                      class="py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer"
+                      :class="renewalMonths === m ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
+                    >
+                      {{ m }} мес.
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Total calculation card -->
+                <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 flex justify-between items-center">
+                  <div>
+                    <span class="block text-[8px] font-bold text-indigo-400 uppercase tracking-wider">Итого к оплате</span>
+                    <span class="block text-[11px] font-semibold text-slate-600 mt-0.5">
+                      {{ orgCalculatedPrice }} сом × {{ renewalMonths }} мес.
+                    </span>
+                  </div>
+                  <div class="text-right">
+                    <span class="font-heading text-base font-black text-indigo-700">
+                      {{ orgCalculatedPrice * renewalMonths }} сом
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Details textarea -->
+                <div>
+                  <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                    Чек об оплате / Номер транзакции / Примечание
+                  </label>
+                  <textarea
+                    v-model="renewalDetails"
+                    rows="2"
+                    placeholder="Например: MBank перевод #123456, оплачено 1500 сом"
+                    class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-semibold text-xs text-slate-800 focus:border-indigo-500 resize-none"
+                  ></textarea>
+                </div>
+
+                <div class="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    @click="isRenewingSubscription = false"
+                    class="flex-1 py-2.5 border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 rounded-xl font-bold text-xs transition cursor-pointer"
+                  >
+                    Назад
+                  </button>
+                  <button
+                    type="button"
+                    @click="submitRenewalTicket"
+                    :disabled="isSubmittingRenewal"
+                    class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition cursor-pointer border-none shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5"
+                  >
+                    <span v-if="isSubmittingRenewal" class="spinner-border spinner-border-sm text-white border-2"></span>
+                    <span v-else class="material-symbols-outlined text-[15px]">send</span>
+                    <span>Отправить</span>
+                  </button>
+                </div>
               </div>
 
-              <!-- Pay Button -->
-              <a
-                :href="whatsappPayLink"
-                target="_blank"
-                class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 border-none decoration-none text-center text-white"
-              >
-                <span class="material-symbols-outlined text-[16px]">payments</span>
-                Оплатить подписку (WhatsApp)
-              </a>
+              <!-- Normal View (Buttons & instructions) -->
+              <template v-else>
+                <!-- Payment instruction -->
+                <div class="p-3 bg-indigo-50/40 border border-indigo-100/50 rounded-xl space-y-1.5 text-xs text-indigo-900 leading-relaxed font-semibold">
+                  <div class="text-[9px] font-black uppercase text-indigo-700 tracking-wider">Инструкция по оплате</div>
+                  <div>Базовая стоимость (до 3 сотрудников) — <span class="font-extrabold text-indigo-750">1500 сом / мес</span>.</div>
+                  <div>За каждого сотрудника сверх лимита — <span class="font-extrabold text-indigo-750">500 сом / мес</span>.</div>
+                  <div>Оплатите подписку и отправьте заявку на продление прямо в системе или через WhatsApp.</div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    @click="isRenewingSubscription = true"
+                    class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 border-none cursor-pointer"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">autorenew</span>
+                    Заявка на продление подписки
+                  </button>
+
+                  <a
+                    :href="whatsappPayLink"
+                    target="_blank"
+                    class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs tracking-wider uppercase transition flex items-center justify-center gap-1.5 border-none decoration-none text-center"
+                  >
+                    <span class="material-symbols-outlined text-[16px]">payments</span>
+                    Оплатить через WhatsApp
+                  </a>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -293,10 +395,10 @@
 <script>
 import { useMainStore } from "../../store";
 import { updateUserProfile } from "../../services/api";
-import { formatPhoneInput, getSubscriptionDaysLeft } from "../../utils/helpers";
+import { formatPhoneInput, getSubscriptionDaysLeft, generateUUID } from "../../utils/helpers";
 
 export default {
-  emits: ["logout", "reopen-welcome", "open-tickets-create"],
+  emits: ["logout", "reopen-welcome", "open-tickets-create", "open-tickets"],
   data() {
     return {
       isEditingProfile: false,
@@ -304,6 +406,10 @@ export default {
       isSavingProfile: false,
       bsModal: null,
       activeProfileTab: "personal",
+      isRenewingSubscription: false,
+      renewalMonths: 1,
+      renewalDetails: "",
+      isSubmittingRenewal: false,
     };
   },
   computed: {
@@ -365,6 +471,13 @@ export default {
     },
     orgCalculatedPrice() {
       return this.calculateSubAmount(this.orgMaxUsers);
+    },
+    openTicketsCount() {
+      const tickets = (this.store.db && this.store.db.supporttickets) || [];
+      if (this.user && this.user.Role === 'Superadmin') {
+        return tickets.filter(t => t.Status === 'Открыта').length;
+      }
+      return tickets.filter(t => t.Status === 'Открыта' && String(t.UserID) === String(this.user?.ID)).length;
     }
   },
   mounted() {
@@ -378,8 +491,9 @@ export default {
       if (limit <= 3) return 1500;
       return 1500 + (limit - 3) * 500;
     },
-    open() {
-      this.activeProfileTab = "personal";
+    open(tab = "personal", openRenewal = false) {
+      this.activeProfileTab = tab;
+      this.isRenewingSubscription = !!openRenewal;
       if (this.user) {
         this.isEditingProfile = false;
         this.profileForm.username = this.user.Username;
@@ -434,9 +548,44 @@ export default {
       this.hide();
       this.store.toggleGamesLobby(true);
     },
+    openTicketsList() {
+      this.hide();
+      this.$emit('open-tickets');
+    },
     triggerCreateTicket() {
       this.hide();
       this.$emit('open-tickets-create');
+    },
+    async submitRenewalTicket() {
+      if (!this.user || !this.user.OrganizationID) {
+        this.store.showToast("Организация не определена", "error");
+        return;
+      }
+      this.isSubmittingRenewal = true;
+      try {
+        const totalAmount = this.orgCalculatedPrice * this.renewalMonths;
+        const details = this.renewalDetails ? this.renewalDetails.trim() : "Чек будет отправлен позже";
+        const desc = `Заявка на продление подписки на ${this.renewalMonths} мес.\nСТО: ${this.userOrgName}\nЛимит: ${this.orgMaxUsers} чел.\nСумма: ${totalAmount} сом.\nДанные об оплате / чек: ${details}`;
+
+        const payload = {
+          ID: generateUUID(),
+          UserID: this.user.ID,
+          OrganizationID: this.user.OrganizationID,
+          Category: 'Продление подписки',
+          Description: desc,
+          Status: 'Открыта',
+          CreatedAt: new Date().toISOString()
+        };
+
+        await this.store.dispatchSync('addRow', payload, 'SupportTickets');
+        this.store.showToast("Заявка на продление успешно отправлена!");
+        this.isRenewingSubscription = false;
+        this.renewalDetails = "";
+      } catch (e) {
+        this.store.showToast(e.message, "error");
+      } finally {
+        this.isSubmittingRenewal = false;
+      }
     },
   },
 };

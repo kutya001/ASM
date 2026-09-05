@@ -77,6 +77,15 @@
           class="modal-footer border-t border-slate-100 px-6 py-4 bg-white flex flex-col sm:flex-row gap-2 sm:gap-3"
         >
           <button
+            v-if="canDeleteThisUser"
+            type="button"
+            class="w-full sm:w-auto px-4 py-2.5 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-xl font-bold text-sm transition border-none cursor-pointer flex items-center justify-center gap-1.5"
+            @click="deleteCurrentUser"
+          >
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+            <span>Удалить</span>
+          </button>
+          <button
             type="button"
             class="w-full sm:flex-1 px-4 py-2.5 border border-slate-205 text-slate-600 rounded-xl bg-white hover:bg-slate-50 font-bold text-sm transition cursor-pointer"
             data-bs-dismiss="modal"
@@ -119,6 +128,15 @@ export default {
     },
     isGlobalAdmin() {
       return this.store.user && this.store.user.Role === 'Superadmin';
+    },
+    canDeleteThisUser() {
+      if (!this.store.user || !this.userConfigForm.ID) return false;
+      if (this.userConfigForm.ID === this.store.user.ID) return false;
+      if (this.isGlobalAdmin) return true;
+      if (this.store.user.Role === 'SenMaster') {
+        return this.userConfigForm.Role === 'Master';
+      }
+      return false;
     },
   },
   mounted() {
@@ -177,6 +195,23 @@ export default {
         this.store.showToast(e.message, "error");
       } finally {
         this.isSavingUserConfig = false;
+      }
+    },
+    async deleteCurrentUser() {
+      const name = this.userConfigForm.Name || "Сотрудник";
+      if (!confirm(`Вы действительно хотите удалить "${name}"?\n\nДоступ к системе будет аннулирован.`)) {
+        return;
+      }
+      try {
+        const id = this.userConfigForm.ID;
+        if (this.store.db.users) {
+          this.store.db.users = this.store.db.users.filter(x => x.ID !== id);
+        }
+        await this.store.dispatchSync("deleteRow", id, "Users");
+        this.store.showToast("Сотрудник удален");
+        this.hide();
+      } catch (e) {
+        this.store.showToast(e.message, "error");
       }
     },
   },

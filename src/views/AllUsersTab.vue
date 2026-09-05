@@ -179,6 +179,14 @@
                   >
                     <span class="material-symbols-outlined text-[14px] font-bold">edit</span>
                   </button>
+                  <button
+                    v-if="store.user && u.ID !== store.user.ID"
+                    @click="confirmDeleteUser(u)"
+                    class="w-7 h-7 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-lg flex items-center justify-center transition border-none cursor-pointer p-0"
+                    title="Удалить пользователя"
+                  >
+                    <span class="material-symbols-outlined text-[14px] font-bold">delete</span>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -237,6 +245,14 @@
               class="w-8 h-8 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-655 rounded-xl flex items-center justify-center transition border-none cursor-pointer"
             >
               <span class="material-symbols-outlined text-[15px]">edit</span>
+            </button>
+            <button
+              v-if="store.user && u.ID !== store.user.ID"
+              @click="confirmDeleteUser(u)"
+              class="w-8 h-8 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-xl flex items-center justify-center transition border-none cursor-pointer"
+              title="Удалить пользователя"
+            >
+              <span class="material-symbols-outlined text-[16px]">delete</span>
             </button>
           </div>
         </div>
@@ -323,6 +339,15 @@
               </div>
             </div>
             <div class="modal-footer border-t border-slate-100 px-6 py-4 bg-white flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <button
+                v-if="store.user && editForm.ID !== store.user.ID"
+                type="button"
+                class="w-full sm:w-auto px-4 py-2.5 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-xl font-bold text-sm transition border-none cursor-pointer flex items-center justify-center gap-1.5"
+                @click="confirmDeleteUserFromModal"
+              >
+                <span class="material-symbols-outlined text-[16px]">delete</span>
+                <span>Удалить</span>
+              </button>
               <button type="button" class="w-full sm:flex-1 px-4 py-2.5 border border-slate-205 text-slate-600 rounded-xl bg-white hover:bg-slate-50 font-bold text-sm transition cursor-pointer" @click="hideEditModal">Отмена</button>
               <button type="button" class="w-full sm:flex-1 px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm transition shadow-lg flex items-center justify-center gap-2 border-none cursor-pointer" @click="saveUser" :disabled="isSaving">
                 <span v-if="isSaving" class="spinner-border spinner-border-sm text-white border-2"></span>
@@ -533,6 +558,29 @@ export default {
         this.store.showToast(e.message, "error");
       } finally {
         this.isSaving = false;
+      }
+    },
+    async confirmDeleteUser(u) {
+      const name = u.Name || u.Username;
+      if (!confirm(`Вы действительно хотите безвозвратно удалить пользователя "${name}" (@${u.Username})?\n\nВсе связанные данные и учетная запись будут удалены.`)) {
+        return;
+      }
+      try {
+        this.usersList = this.usersList.filter(x => x.ID !== u.ID);
+        if (this.db.users) {
+          this.db.users = this.db.users.filter(x => x.ID !== u.ID);
+        }
+        await this.store.dispatchSync("deleteRow", u.ID, "Users");
+        this.store.showToast(`Пользователь @${u.Username} удален`);
+      } catch (err) {
+        this.store.showToast(err.message, "error");
+      }
+    },
+    confirmDeleteUserFromModal() {
+      const u = this.usersList.find(x => x.ID === this.editForm.ID) || (this.db.users || []).find(x => x.ID === this.editForm.ID);
+      if (u) {
+        this.hideEditModal();
+        this.confirmDeleteUser(u);
       }
     }
   }

@@ -136,21 +136,6 @@
         </a>
       </template>
 
-      <!-- Support tickets link (everyone) -->
-      <a
-        v-if="user"
-        @click="setTab('tickets')"
-        :class="
-          activeTab === 'tickets'
-            ? 'bg-indigo-50 text-indigo-700'
-            : 'text-slate-600 hover:bg-slate-50'
-        "
-        class="flex items-center gap-3 px-4 py-2 text-sm rounded-lg font-semibold cursor-pointer transition-colors"
-      >
-        <i class="bi bi-chat-square-text w-4 h-4 flex items-center justify-center"></i>
-        Заявки
-      </a>
-
       <!-- About / Welcome screen link -->
       <a
         v-if="user"

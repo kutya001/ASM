@@ -164,6 +164,14 @@
             >
               <span class="material-symbols-outlined text-[16px] font-bold">settings</span>
             </button>
+            <button
+              v-if="canDeleteUser(u)"
+              @click="confirmDeleteUser(u)"
+              class="w-8 h-8 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-xl flex items-center justify-center transition border-none cursor-pointer p-0"
+              title="Удалить сотрудника"
+            >
+              <span class="material-symbols-outlined text-[16px] font-bold">delete</span>
+            </button>
           </div>
         </div>
       </div>
@@ -274,6 +282,30 @@ export default {
       if (!this.db.organizations) return "—";
       const org = this.db.organizations.find(o => o.ID === orgId);
       return org ? org.Name : "—";
+    },
+    canDeleteUser(u) {
+      if (!this.store.user) return false;
+      if (u.ID === this.store.user.ID) return false;
+      if (this.isGlobalAdmin) return true;
+      if (this.store.user.Role === 'SenMaster') {
+        return u.Role === 'Master';
+      }
+      return false;
+    },
+    async confirmDeleteUser(u) {
+      const name = u.Name || u.Username;
+      if (!confirm(`Вы действительно хотите удалить сотрудника "${name}" (@${u.Username})?\n\nДоступ сотрудника к системе будет аннулирован.`)) {
+        return;
+      }
+      try {
+        if (this.db.users) {
+          this.db.users = this.db.users.filter(x => x.ID !== u.ID);
+        }
+        await this.store.dispatchSync("deleteRow", u.ID, "Users");
+        this.store.showToast(`Сотрудник @${u.Username} удален`);
+      } catch (err) {
+        this.store.showToast(err.message, "error");
+      }
     }
   },
   emits: ['approve-user', 'open-user-config']

@@ -217,6 +217,19 @@ export async function adminUpdateUserPassword(targetUserId, newPassword) {
   return { success: true };
 }
 
+export async function deleteUser(userId) {
+  if (!userId) throw new Error("Укажите пользователя для удаления");
+  const { error } = await supabase.rpc("admin_delete_user", {
+    target_user_id: userId
+  });
+  if (error) {
+    console.warn("RPC admin_delete_user failed, fallback to direct delete:", error);
+    const { error: directErr } = await supabase.from("users").delete().eq("id", userId);
+    handleError(directErr || error);
+  }
+  return { id: userId };
+}
+
 export async function logPageView(pageName, userId, orgId) {
   if (!userId) return;
   const { data: { session } } = await supabase.auth.getSession();
@@ -599,6 +612,10 @@ export async function updateRow(sheetName, obj) {
 
 export async function deleteRow(sheetName, id) {
   const table = resolveTable(sheetName);
+  if (table === "users") {
+    const userId = typeof id === "object" && id !== null ? (id.ID || id.id) : id;
+    return deleteUser(userId);
+  }
   let query = supabase.from(table).delete();
   if (typeof id === "object" && id !== null) {
     for (const [key, val] of Object.entries(id)) {

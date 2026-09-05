@@ -1,17 +1,18 @@
 <template>
   <div class="space-y-4 max-w-2xl mx-auto w-full pb-20 animate-fade-in text-left">
     <!-- Header info line -->
-    <div class="flex justify-between items-center px-1">
-      <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider font-heading flex items-center gap-1.5">
-        <span class="material-symbols-outlined text-[16px] text-indigo-500">support_agent</span>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 px-1">
+      <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider font-heading flex items-center gap-1.5 m-0">
+        <span class="material-symbols-outlined text-[18px] text-indigo-500">support_agent</span>
         {{ isGlobalAdmin ? 'Все заявки пользователей' : 'Мои заявки администратору' }}
       </h2>
       <button
         v-if="!isGlobalAdmin"
         @click="openCreateModal"
-        class="h-8 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg border-none transition cursor-pointer flex items-center gap-1 shadow-sm"
+        class="w-full sm:w-auto h-9 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl border-none transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-100"
       >
-        <span class="material-symbols-outlined text-[14px]">add</span> Создать заявку
+        <span class="material-symbols-outlined text-[16px]">add</span>
+        <span>Создать заявку</span>
       </button>
     </div>
 
@@ -86,6 +87,14 @@
         <div class="flex justify-end gap-2 pt-1 border-t border-slate-50">
           <!-- Superadmin Actions -->
           <template v-if="isGlobalAdmin">
+            <button
+              v-if="t.Status === 'Открыта' && t.Category === 'Продление подписки'"
+              @click="approveAndExtendSubscription(t)"
+              class="h-7 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] rounded-lg transition border-none cursor-pointer flex items-center gap-1 shadow-xs"
+              title="Продлить подписку организации на 1 месяц"
+            >
+              <span class="material-symbols-outlined text-[13px]">autorenew</span> Продлить (+1 мес)
+            </button>
             <button
               v-if="t.Status === 'Открыта'"
               @click="updateStatus(t, 'Выполнена')"
@@ -179,6 +188,7 @@ export default {
         Description: ''
       },
       categories: [
+        'Продление подписки',
         'Справочник: Услуги',
         'Справочник: Марки',
         'Справочник: Модели',
@@ -235,6 +245,7 @@ export default {
       return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     },
     getCategoryBadgeClass(cat) {
+      if (cat.includes("подписки")) return "bg-violet-50 text-violet-700 border border-violet-200/60";
       if (cat.includes("Услуги")) return "bg-indigo-50 text-indigo-650 border border-indigo-150/30";
       if (cat.includes("Марки")) return "bg-amber-50 text-amber-650 border border-amber-150/30";
       if (cat.includes("Модели")) return "bg-purple-50 text-purple-655 border border-purple-150/30";
@@ -332,6 +343,71 @@ export default {
           this.store.showToast(`Статус заявки изменен на: ${newStatus}`);
         } catch (e) {
           this.store.showToast(e.message, 'error');
+        }
+      }
+    },
+    async approveAndExtendSubscription(ticket) {
+      if (!ticket.OrganizationID) {
+        this.store.showToast("У заявки не указана организация", "error");
+        return;
+      }
+      const org = (this.db.organizations || []).find(o => String(o.ID) === String(ticket.OrganizationID));
+      if (!org) {
+        this.store.showToast("Организация не найдена", "error");
+        return;
+      }
+
+      // Check if description has a number of months requested
+      let monthsToAdd = 1;
+      const match = String(ticket.Description || '').match(/(\d+)\s*(?:мес|month)/i);
+      if (match && Number(match[1]) > 0) {
+        monthsToAdd = Number(match[1]);
+      }
+
+      if (confirm(`Одобрить заявку и продлить подписку для "${org.Name}" на ${monthsToAdd} мес.?`)) {
+        try {
+          let baseDate = new Date();
+          if (org.SubscriptionEndsAt) {
+            const currentEnds = new Date(org.SubscriptionEndsAt);
+            if (currentEnds > new Date()) {
+              baseDate = currentEnds;
+            }
+          }
+          baseDate.setMonth(baseDate.getMonth() + monthsToAdd);
+          const newEndDate = baseDate.toISOString();
+
+          // 1. Update organization
+          await this.store.dispatchSync("updateRow", {
+            ID: org.ID,
+            SubscriptionEndsAt: newEndDate
+          }, "Organizations");
+
+          // 2. Add subscription log
+          const maxUsers = org.MaxUsers || 3;
+          const monthlyRate = maxUsers <= 3 ? 1500 : 1500 + (maxUsers - 3) * 500;
+          const totalAmount = monthlyRate * monthsToAdd;
+          await this.store.dispatchSync("addRow", {
+            OrganizationID: org.ID,
+            StartDate: org.SubscriptionEndsAt || new Date().toISOString(),
+            EndDate: newEndDate,
+            MaxUsers: maxUsers,
+            Amount: totalAmount
+          }, "SubscriptionLogs");
+
+          // 3. Update ticket status
+          await this.store.dispatchSync("updateRow", {
+            ...ticket,
+            Status: "Выполнена"
+          }, "SupportTickets");
+
+          let idx = (this.db.supporttickets || []).findIndex(x => x.ID === ticket.ID);
+          if (idx > -1) {
+            this.db.supporttickets[idx].Status = "Выполнена";
+          }
+
+          this.store.showToast(`Подписка для "${org.Name}" продлена на ${monthsToAdd} мес.`);
+        } catch (e) {
+          this.store.showToast(e.message, "error");
         }
       }
     }

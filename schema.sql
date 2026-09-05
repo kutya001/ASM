@@ -258,6 +258,15 @@ create policy "Allow update users for self, Superadmin, or SenMaster" on users f
       and organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
     )
   );
+create policy "Allow delete users for Superadmin or SenMaster" on users for delete
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or (
+      (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster' 
+      and organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+      and role = 'Master'
+    )
+  );
 
 -- Services
 create policy "Allow select services for same org or Superadmin" on services for select
@@ -341,6 +350,12 @@ create policy "Allow update support_tickets for owner or Superadmin" on support_
     or user_id = auth.uid()
   );
 
+create policy "Allow delete support_tickets for owner or Superadmin" on support_tickets for delete
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or user_id = auth.uid()
+  );
+
 -- 15. Page Views RLS & Policies
 alter table page_views enable row level security;
 
@@ -363,3 +378,43 @@ begin
   where id = target_user_id;
 end;
 $$ language plpgsql security definer;
+
+-- 17. Admin Delete User RPC (Superadmin and SenMaster power)
+create or replace function public.admin_delete_user(target_user_id uuid)
+returns void as $$
+declare
+  caller_role text;
+  caller_org text;
+  target_org text;
+  target_role text;
+begin
+  caller_role := auth.jwt() -> 'app_metadata' ->> 'role';
+  caller_org := auth.jwt() -> 'app_metadata' ->> 'organization_id';
+
+  select organization_id::text, role into target_org, target_role
+  from public.users
+  where id = target_user_id;
+
+  if caller_role = 'Superadmin' then
+    if target_user_id = auth.uid() then
+      raise exception 'Нельзя удалить собственный аккаунт администратора';
+    end if;
+  elsif caller_role = 'SenMaster' then
+    if target_user_id = auth.uid() then
+      raise exception 'Нельзя удалить самого себя';
+    end if;
+    if caller_org is null or target_org is null or caller_org != target_org then
+      raise exception 'Нет доступа к удалению пользователя другой организации';
+    end if;
+    if target_role != 'Master' then
+      raise exception 'Старший мастер может удалять только мастеров своей организации';
+    end if;
+  else
+    raise exception 'Недостаточно прав для удаления пользователя';
+  end if;
+
+  delete from public.users where id = target_user_id;
+  delete from auth.users where id = target_user_id;
+end;
+$$ language plpgsql security definer;
+

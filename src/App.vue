@@ -59,24 +59,32 @@
       </div>
 
       <div class="flex flex-col gap-2 pt-2">
+        <button
+          v-if="user && user.Role === 'SenMaster'"
+          @click="openProfileModal('organization', true)"
+          class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 border-none cursor-pointer"
+        >
+          <span class="material-symbols-outlined text-[16px]">autorenew</span>
+          Заявка на продление подписки
+        </button>
         <a
           :href="payWhatsAppLink"
           target="_blank"
-          class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 border-none decoration-none text-white"
+          class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs tracking-wider uppercase transition flex items-center justify-center gap-1.5 border-none decoration-none text-center"
         >
           <span class="material-symbols-outlined text-[16px]">payments</span>
-          Оплатить (WhatsApp)
+          Оплатить через WhatsApp
         </a>
         <button
           v-if="user && user.Role === 'SenMaster'"
-          @click="openProfileModal('organization')"
-          class="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-655 rounded-xl font-bold text-xs tracking-wider uppercase transition border-none cursor-pointer"
+          @click="openProfileModal('organization', false)"
+          class="w-full py-2.5 bg-transparent hover:bg-slate-100 text-slate-500 rounded-xl font-bold text-xs tracking-wider uppercase transition border-none cursor-pointer"
         >
           Профиль организации
         </button>
         <button
           @click="logout"
-          class="w-full py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold text-xs tracking-wider uppercase transition border-none bg-transparent cursor-pointer"
+          class="w-full py-2 text-red-500 hover:bg-red-50 rounded-xl font-bold text-xs tracking-wider uppercase transition border-none bg-transparent cursor-pointer"
         >
           Выйти из аккаунта
         </button>
@@ -167,7 +175,7 @@
       <MobileNav v-if="!isImportModalOpen" :active-tab="activeTab" @update:active-tab="activeTab = $event" />
     </main>
 
-    <ProfileModal ref="profileModal" :store="store" @logout="logout" @reopen-welcome="showWelcome = true" @open-tickets-create="handleOpenTicketsCreate" />
+    <ProfileModal ref="profileModal" :store="store" @logout="logout" @reopen-welcome="showWelcome = true" @open-tickets-create="handleOpenTicketsCreate" @open-tickets="activeTab = 'tickets'" />
     <RecordModal ref="recordModal" :store="store" :user="user" />
     <UserConfigModal ref="userConfigModal" :store="store" @save="refreshUsers" />
     <RefModal ref="refModal" />
@@ -607,9 +615,9 @@ export default {
       }
     },
 
-    openProfileModal(tab = "personal") {
+    openProfileModal(tab = "personal", openRenewal = false) {
       if (this.$refs.profileModal) {
-        this.$refs.profileModal.open(tab);
+        this.$refs.profileModal.open(tab, openRenewal);
       }
     },
     handleOpenTicketsCreate() {
