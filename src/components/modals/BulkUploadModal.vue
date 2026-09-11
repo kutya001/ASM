@@ -83,6 +83,7 @@
 
 <script>
 import { useMainStore } from "../../store";
+import { generateUUID } from "../../utils/helpers";
 
 export default {
   data() {
@@ -127,7 +128,7 @@ export default {
       if (this.bsModal) this.bsModal.hide();
     },
     generateId() {
-      return "local_" + Date.now() + "_" + Math.floor(Math.random()*10000);
+      return generateUUID();
     },
     async processUpload() {
       this.errorText = "";

@@ -1,15 +1,16 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { useMainStore } from '../store';
-import RecordsTab from '../views/RecordsTab.vue';
-import DashboardTab from '../views/DashboardTab.vue';
-import RefsTab from '../views/RefsTab.vue';
-import UsersTab from '../views/UsersTab.vue';
-import OrganizationsTab from '../views/OrganizationsTab.vue';
-import TicketsTab from '../views/TicketsTab.vue';
-import AuthView from '../views/AuthView.vue';
-import AllUsersTab from '../views/AllUsersTab.vue';
-import PageAnalyticsTab from '../views/PageAnalyticsTab.vue';
 import { logPageView } from '../services/api';
+
+const AuthView = () => import('../views/AuthView.vue');
+const RecordsTab = () => import('../views/RecordsTab.vue');
+const DashboardTab = () => import('../views/DashboardTab.vue');
+const RefsTab = () => import('../views/RefsTab.vue');
+const UsersTab = () => import('../views/UsersTab.vue');
+const AllUsersTab = () => import('../views/AllUsersTab.vue');
+const PageAnalyticsTab = () => import('../views/PageAnalyticsTab.vue');
+const OrganizationsTab = () => import('../views/OrganizationsTab.vue');
+const TicketsTab = () => import('../views/TicketsTab.vue');
 
 const routes = [
   {
@@ -88,8 +89,18 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+let isAuthInitialized = false;
+
+router.beforeEach(async (to, from, next) => {
   const store = useMainStore();
+
+  if (!isAuthInitialized) {
+    if (localStorage.getItem("currentUser")) {
+      await store.initAuth();
+    }
+    isAuthInitialized = true;
+  }
+
   const user = store.user;
 
   if (to.meta.requiresAuth && !user) {
@@ -111,9 +122,11 @@ router.beforeEach((to, from, next) => {
   }
 });
 
+let lastLoggedPage = null;
 router.afterEach((to) => {
   const store = useMainStore();
-  if (store.user && to.name && to.name !== 'login') {
+  if (store.user && to.name && to.name !== 'login' && to.name !== lastLoggedPage) {
+    lastLoggedPage = to.name;
     logPageView(to.name, store.user.ID, store.user.OrganizationID);
   }
 });

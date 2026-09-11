@@ -77,7 +77,6 @@
               <th class="px-5 py-3">Логин / Телефон</th>
               <th class="px-5 py-3">Организация</th>
               <th class="px-5 py-3">Роль / Допуск</th>
-              <th class="px-5 py-3">Пароль</th>
               <th class="px-5 py-3">Активность</th>
               <th class="px-5 py-3 text-right">Действия</th>
             </tr>
@@ -135,23 +134,6 @@
                 </div>
               </td>
 
-              <!-- Password reveal -->
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-1.5">
-                  <span class="font-mono font-bold text-slate-700 bg-slate-50 border border-slate-150 rounded px-1.5 py-0.5 leading-none">
-                    {{ visiblePasswords[u.ID] ? (u.Password || '—') : '••••••••' }}
-                  </span>
-                  <button
-                    type="button"
-                    @click="togglePassword(u.ID)"
-                    class="p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-indigo-650 transition border-none bg-transparent cursor-pointer flex items-center justify-center"
-                  >
-                    <span class="material-symbols-outlined text-[14px]">
-                      {{ visiblePasswords[u.ID] ? 'visibility_off' : 'visibility' }}
-                    </span>
-                  </button>
-                </div>
-              </td>
 
               <!-- Activity Log -->
               <td class="px-5 py-3.5">
@@ -380,7 +362,6 @@ export default {
       filterRole: "all",
       filterStatus: "all",
       filterOrg: "all",
-      visiblePasswords: {},
       editForm: { ID: "", Name: "", Phone: "", OrganizationID: "", Role: "Master", Status: "Approved", NewPassword: "" },
       isSaving: false,
       isFetching: false,
@@ -439,24 +420,18 @@ export default {
       try {
         const { data, error } = await supabase
           .from("users")
-          .select("id, username, password, role, status, name, phone, organization_id, created_at, last_login_at")
+          .select("id, username, role, status, name, phone, organization_id, created_at, last_login_at")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
         const mapped = (data || []).map(u => toApp("users", u));
         this.usersList = mapped;
-        this.store.db.users = mapped;
-        if (this.db) {
-          this.db.users = mapped;
-        }
+        this.store.setUsers(mapped);
       } catch (err) {
         console.error("Failed to fetch users:", err);
       } finally {
         this.isFetching = false;
       }
-    },
-    togglePassword(id) {
-      this.visiblePasswords[id] = !this.visiblePasswords[id];
     },
     getOrgName(orgId) {
       if (!orgId) return "Глобальный (Без СТО)";
@@ -499,10 +474,11 @@ export default {
     },
     async approveUser(id) {
       try {
-        let idx = this.db.users.findIndex(x => x.ID === id);
+        let idx = this.usersList.findIndex(x => x.ID === id);
         if (idx > -1) {
-          this.db.users[idx].Status = "Approved";
+          this.usersList[idx].Status = "Approved";
         }
+        this.store.updateUserInStore({ ID: id, Status: "Approved" });
         this.store.dispatchSync(
           "approveUser",
           { id: id, data: { Status: "Approved" } },
@@ -519,12 +495,6 @@ export default {
         // 1. Update Password if specified
         if (this.editForm.NewPassword) {
           await adminUpdateUserPassword(this.editForm.ID, this.editForm.NewPassword);
-          
-          // Locally update in our list if visible
-          let idx = this.db.users.findIndex(x => x.ID === this.editForm.ID);
-          if (idx > -1) {
-            this.db.users[idx].Password = this.editForm.NewPassword;
-          }
           this.store.showToast("Пароль успешно принудительно изменен");
         }
 
@@ -537,14 +507,15 @@ export default {
           Phone: this.editForm.Phone
         };
 
-        // Update locally first
-        let idx = this.db.users.findIndex(x => x.ID === this.editForm.ID);
+        // Update locally in usersList and store
+        let idx = this.usersList.findIndex(x => x.ID === this.editForm.ID);
         if (idx > -1) {
-          this.db.users[idx] = {
-            ...this.db.users[idx],
+          this.usersList[idx] = {
+            ...this.usersList[idx],
             ...updatePayload
           };
         }
+        this.store.updateUserInStore({ ID: this.editForm.ID, ...updatePayload });
 
         await this.store.dispatchSync(
           "approveUser",
@@ -567,9 +538,7 @@ export default {
       }
       try {
         this.usersList = this.usersList.filter(x => x.ID !== u.ID);
-        if (this.db.users) {
-          this.db.users = this.db.users.filter(x => x.ID !== u.ID);
-        }
+        this.store.deleteUserInStore(u.ID);
         await this.store.dispatchSync("deleteRow", u.ID, "Users");
         this.store.showToast(`Пользователь @${u.Username} удален`);
       } catch (err) {
@@ -577,7 +546,7 @@ export default {
       }
     },
     confirmDeleteUserFromModal() {
-      const u = this.usersList.find(x => x.ID === this.editForm.ID) || (this.db.users || []).find(x => x.ID === this.editForm.ID);
+      const u = this.usersList.find(x => x.ID === this.editForm.ID) || (this.store.db && (this.store.db.users || []).find(x => x.ID === this.editForm.ID));
       if (u) {
         this.hideEditModal();
         this.confirmDeleteUser(u);

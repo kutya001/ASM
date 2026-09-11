@@ -171,7 +171,8 @@ function handleError(error) {
 
 export async function loginUser(username, password) {
   if (!username || !password) throw new Error("Укажите логин и пароль");
-  const email = `${username.trim()}@asm.kg`;
+  const cleanUsername = username.trim().toLowerCase();
+  const email = `${cleanUsername}@asm.kg`;
   
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
     email,
@@ -256,6 +257,10 @@ export async function getOrganizations() {
 
 export async function registerUserWithOrg(username, password, orgMode, orgValue) {
   if (!username || !password) throw new Error("Укажите логин и пароль");
+  const cleanUsername = username.trim().toLowerCase();
+  if (!/^[a-z0-9_.-]+$/i.test(cleanUsername)) {
+    throw new Error("Логин может содержать только латинские буквы, цифры, точку, дефис и подчеркивание");
+  }
   if (!orgValue) {
     throw new Error(orgMode === "create" ? "Укажите название организации" : "Выберите организацию");
   }
@@ -264,7 +269,7 @@ export async function registerUserWithOrg(username, password, orgMode, orgValue)
   const { data: existing } = await supabase
     .from("users")
     .select("id")
-    .eq("username", username.trim())
+    .eq("username", cleanUsername)
     .maybeSingle();
   if (existing) throw new Error("Пользователь с таким логином уже существует");
 
@@ -292,7 +297,7 @@ export async function registerUserWithOrg(username, password, orgMode, orgValue)
   }
 
   const role = orgMode === "create" ? "SenMaster" : "Master";
-  const email = `${username.trim()}@asm.kg`;
+  const email = `${cleanUsername}@asm.kg`;
 
   const { error: signUpErr } = await supabase.auth.signUp({
     email,
@@ -665,7 +670,7 @@ export async function bulkImport(data) {
       if (m.BrandName) {
         brandId = brandMap[m.BrandName.trim().toLowerCase()] || brandId;
       }
-      if (!brandId) continue;
+      if (!brandId || !isValidUUID(brandId)) continue;
       const exists = (existingModels || []).some(
         (em) => String(em.brand_id) === String(brandId) && em.name.toLowerCase() === name.toLowerCase()
       );

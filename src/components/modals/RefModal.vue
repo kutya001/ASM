@@ -338,11 +338,15 @@ export default {
           this.store.dispatchSync("updateRow", payload, sheet);
         }
 
-        this.store.showToast(
-          payload.ID && !isNew
-            ? "Услуга обновлена"
-            : "Услуга добавлена",
-        );
+        const labels = {
+          categories: "Категория",
+          globalservices: "Услуга",
+          brands: "Марка",
+          models: "Модель"
+        };
+        const label = labels[this.activeRefTab] || "Запись";
+        const action = payload.ID && !isNew ? "обновлена" : "добавлена";
+        this.store.showToast(`${label} ${action}`);
         this.hide();
       } catch (e) {
         this.store.showToast(e.message, "error");

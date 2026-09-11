@@ -25,23 +25,42 @@ create table if not exists users (
   created_at timestamptz default now()
 );
 
--- 3. Services
+-- 3. Service Categories
+create table if not exists service_categories (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  created_at timestamptz default now()
+);
+
+-- 4. Global Services (Templates)
+create table if not exists global_services (
+  id uuid primary key default gen_random_uuid(),
+  category_id uuid references service_categories(id) on delete cascade,
+  name text not null,
+  default_price numeric not null default 0,
+  created_at timestamptz default now()
+);
+
+-- 5. Services (Tenant Services)
 create table if not exists services (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   price numeric not null default 0,
   organization_id uuid references organizations(id) on delete cascade,
+  category_id uuid references service_categories(id) on delete set null,
+  global_service_id uuid references global_services(id) on delete set null,
+  is_custom boolean not null default false,
   created_at timestamptz default now()
 );
 
--- 4. Brands
+-- 6. Brands
 create table if not exists brands (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   created_at timestamptz default now()
 );
 
--- 5. Models
+-- 7. Models
 create table if not exists models (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid references brands(id) on delete cascade,
@@ -49,7 +68,20 @@ create table if not exists models (
   created_at timestamptz default now()
 );
 
--- 6. Welcome Screens
+-- 8. Organization Brands & Models (Junction Tables for Tenant Vehicle Scope)
+create table if not exists organization_brands (
+  organization_id uuid references organizations(id) on delete cascade,
+  brand_id uuid references brands(id) on delete cascade,
+  primary key (organization_id, brand_id)
+);
+
+create table if not exists organization_models (
+  organization_id uuid references organizations(id) on delete cascade,
+  model_id uuid references models(id) on delete cascade,
+  primary key (organization_id, model_id)
+);
+
+-- 9. Welcome Screens
 create table if not exists welcome_screens (
   id text primary key,
   title text,
@@ -62,7 +94,7 @@ insert into welcome_screens (id, title, text)
 values ('welcome_main', 'Добро пожаловать в ASM ERP', 'Система автоматизации автосервисов.')
 on conflict (id) do nothing;
 
--- 7. Game Records
+-- 10. Game Records
 create table if not exists game_records (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id) on delete cascade,
@@ -73,7 +105,7 @@ create table if not exists game_records (
   score integer default 0
 );
 
--- 8. Records (Orders)
+-- 11. Records (Orders)
 create table if not exists records (
   id uuid primary key default gen_random_uuid(),
   client_name text,
@@ -94,7 +126,7 @@ create table if not exists records (
   created_at timestamptz default now()
 );
 
--- 8.5. Subscription Logs (Journal)
+-- 12. Subscription Logs (Journal)
 create table if not exists subscription_logs (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid references organizations(id) on delete cascade,
@@ -105,7 +137,7 @@ create table if not exists subscription_logs (
   created_at timestamptz default now()
 );
 
--- 8.6. Support Tickets (Заявки)
+-- 13. Support Tickets (Заявки)
 create table if not exists support_tickets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id) on delete cascade not null,
@@ -116,7 +148,7 @@ create table if not exists support_tickets (
   created_at timestamptz default now()
 );
 
--- 8.7. Page Views (Логи кликов страниц)
+-- 14. Page Views (Логи кликов страниц)
 create table if not exists page_views (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id) on delete cascade not null,
@@ -125,6 +157,17 @@ create table if not exists page_views (
   created_at timestamptz default now()
 );
 
+-- Indexes for performance & query optimization
+create index if not exists idx_records_org_master on records (organization_id, master_id);
+create index if not exists idx_records_start_time on records (start_time desc);
+create index if not exists idx_records_status on records (status);
+create index if not exists idx_services_org on services (organization_id);
+create index if not exists idx_models_brand on models (brand_id);
+create index if not exists idx_global_services_cat on global_services (category_id);
+create index if not exists idx_page_views_created on page_views (created_at desc);
+create index if not exists idx_support_tickets_user on support_tickets (user_id);
+create index if not exists idx_support_tickets_org on support_tickets (organization_id);
+
 -- Enable Realtime publication
 begin;
   drop publication if exists supabase_realtime;
@@ -132,8 +175,12 @@ begin;
     organizations, 
     users, 
     services, 
+    service_categories,
+    global_services,
     brands, 
     models, 
+    organization_brands,
+    organization_models,
     welcome_screens, 
     game_records, 
     records,
@@ -142,23 +189,33 @@ begin;
     page_views;
 commit;
 
--- 9. Trigger to sync auth.users to public.users
+-- 15. Trigger to sync auth.users to public.users with Security Guard against Superadmin self-assignment
 create or replace function public.handle_new_user()
 returns trigger as $$
 declare
+  raw_role text;
   user_role text;
   user_status text;
   org_id text;
 begin
-  user_role := coalesce(new.raw_user_meta_data->>'role', 'Master');
+  raw_role := coalesce(new.raw_user_meta_data->>'role', 'Master');
+  
+  -- Security Guard: Never allow assigning 'Superadmin' via user-provided metadata
+  if raw_role = 'Superadmin' then
+    user_role := 'Master';
+  elsif raw_role = 'SenMaster' then
+    user_role := 'SenMaster';
+  else
+    user_role := 'Master';
+  end if;
+
   user_status := case 
     when user_role = 'SenMaster' then 'Approved' 
-    when user_role = 'Superadmin' then 'Approved'
     else 'Pending' 
   end;
   org_id := new.raw_user_meta_data->>'organization_id';
 
-  -- Update auth.users app_metadata for JWT claims (secure app_metadata)
+  -- Update auth.users app_metadata for secure JWT claims
   update auth.users
   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || 
                           jsonb_build_object(
@@ -187,7 +244,7 @@ create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- 10. RPC function to update user claims and profile
+-- 16. RPC function to update user claims and profile (Secured with role checks)
 create or replace function public.update_user_claims(
   target_user_id uuid, 
   new_role text, 
@@ -197,7 +254,44 @@ create or replace function public.update_user_claims(
   new_phone text
 )
 returns void as $$
+declare
+  caller_id uuid;
+  caller_role text;
+  caller_org text;
+  target_current_org text;
+  target_current_role text;
 begin
+  caller_id := auth.uid();
+  if caller_id is null then
+    raise exception 'Unauthorized: Authentication required';
+  end if;
+
+  caller_role := auth.jwt() -> 'app_metadata' ->> 'role';
+  caller_org := auth.jwt() -> 'app_metadata' ->> 'organization_id';
+
+  select organization_id::text, role into target_current_org, target_current_role
+  from public.users
+  where id = target_user_id;
+
+  -- Security Verification
+  if caller_role = 'Superadmin' then
+    -- Superadmin has full authority
+    null;
+  elsif caller_role = 'SenMaster' then
+    -- SenMaster can ONLY update Masters within their own organization
+    if caller_org is null or target_current_org is null or caller_org != target_current_org then
+      raise exception 'Unauthorized: Cannot modify users of another organization';
+    end if;
+    if target_current_role = 'Superadmin' or new_role = 'Superadmin' then
+      raise exception 'Unauthorized: Cannot grant or modify Superadmin privileges';
+    end if;
+    if new_org_id is not null and new_org_id::text != caller_org then
+      raise exception 'Unauthorized: Cannot move users to another organization';
+    end if;
+  else
+    raise exception 'Unauthorized: Insufficient permissions to update user claims';
+  end if;
+
   update auth.users
   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || 
                           jsonb_build_object(
@@ -223,22 +317,37 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- 11. Enable Row-Level Security (RLS)
+-- 17. Enable Row-Level Security (RLS) on all tables
 alter table organizations enable row level security;
 alter table users enable row level security;
+alter table service_categories enable row level security;
+alter table global_services enable row level security;
 alter table services enable row level security;
 alter table brands enable row level security;
 alter table models enable row level security;
+alter table organization_brands enable row level security;
+alter table organization_models enable row level security;
 alter table welcome_screens enable row level security;
 alter table game_records enable row level security;
 alter table records enable row level security;
+alter table subscription_logs enable row level security;
+alter table support_tickets enable row level security;
+alter table page_views enable row level security;
 
--- 12. Define RLS policies
+-- 18. Define RLS policies
 
 -- Organizations
 create policy "Allow select organizations for everyone" on organizations for select using (true);
-create policy "Allow insert organizations for everyone" on organizations for insert with check (true);
-create policy "Allow write organizations for Superadmin" on organizations for all
+create policy "Allow insert organizations for authenticated or anon registration" on organizations for insert with check (true);
+create policy "Allow update organizations for Superadmin or SenMaster of own org" on organizations for update
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or (
+      (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster'
+      and id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+    )
+  );
+create policy "Allow delete organizations for Superadmin" on organizations for delete
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
 
 -- Users
@@ -248,7 +357,7 @@ create policy "Allow select users for same org or Superadmin" on users for selec
     or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
     or id = auth.uid()
   );
-create policy "Allow insert users for everyone" on users for insert with check (true);
+create policy "Allow insert users for system trigger" on users for insert with check (true);
 create policy "Allow update users for self, Superadmin, or SenMaster" on users for update
   using (
     id = auth.uid() 
@@ -268,7 +377,17 @@ create policy "Allow delete users for Superadmin or SenMaster" on users for dele
     )
   );
 
--- Services
+-- Service Categories (Global dictionary)
+create policy "Allow select service_categories for everyone" on service_categories for select using (true);
+create policy "Allow write service_categories for Superadmin" on service_categories for all
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
+
+-- Global Services (Global templates)
+create policy "Allow select global_services for everyone" on global_services for select using (true);
+create policy "Allow write global_services for Superadmin" on global_services for all
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
+
+-- Tenant Services
 create policy "Allow select services for same org or Superadmin" on services for select
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin' 
@@ -283,15 +402,43 @@ create policy "Allow write services for Superadmin or SenMaster" on services for
     )
   );
 
--- Brands
+-- Brands & Models
 create policy "Allow select brands for everyone" on brands for select using (true);
 create policy "Allow write brands for Superadmin" on brands for all
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
 
--- Models
 create policy "Allow select models for everyone" on models for select using (true);
 create policy "Allow write models for Superadmin" on models for all
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
+
+-- Organization Brands & Models (Tenant vehicle preferences)
+create policy "Allow select organization_brands for same org or Superadmin" on organization_brands for select
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+  );
+create policy "Allow write organization_brands for Superadmin or SenMaster" on organization_brands for all
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or (
+      (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster'
+      and organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+    )
+  );
+
+create policy "Allow select organization_models for same org or Superadmin" on organization_models for select
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+  );
+create policy "Allow write organization_models for Superadmin or SenMaster" on organization_models for all
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or (
+      (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster'
+      and organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+    )
+  );
 
 -- Welcome Screens
 create policy "Allow select welcome_screens for everyone" on welcome_screens for select using (true);
@@ -302,21 +449,59 @@ create policy "Allow write welcome_screens for Superadmin" on welcome_screens fo
 create policy "Allow select game_records for everyone" on game_records for select using (true);
 create policy "Allow insert game_records for authenticated" on game_records for insert
   with check (auth.uid() is not null);
+create policy "Allow update game_records for owner" on game_records for update
+  using (user_id = auth.uid());
 
--- Records
-create policy "Allow all records for same org or Superadmin" on records for all
+-- Records (Orders) with tenant & role isolation
+create policy "Allow select records for authorized roles" on records for select
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
-    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
-  )
-  with check (
-    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
-    or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+    or (
+      organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+      and (
+        (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster'
+        or master_id = auth.uid()
+      )
+    )
   );
 
--- 13. Subscription Logs RLS & Policies
-alter table subscription_logs enable row level security;
+create policy "Allow insert records for org members" on records for insert
+  with check (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or (
+      organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+      and (
+        (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster'
+        or master_id = auth.uid()
+      )
+    )
+  );
 
+create policy "Allow update records for authorized roles" on records for update
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or (
+      organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+      and (
+        (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster'
+        or (
+          master_id = auth.uid()
+          and status = 'Открыт'
+        )
+      )
+    )
+  );
+
+create policy "Allow delete records for Superadmin or SenMaster" on records for delete
+  using (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
+    or (
+      (auth.jwt() -> 'app_metadata' ->> 'role') = 'SenMaster'
+      and organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
+    )
+  );
+
+-- Subscription Logs RLS & Policies
 create policy "Allow select subscription_logs for same org or Superadmin" on subscription_logs for select
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
@@ -332,9 +517,7 @@ create policy "Allow insert subscription_logs for same org or Superadmin" on sub
     or organization_id = (auth.jwt() -> 'app_metadata' ->> 'organization_id')::uuid
   );
 
--- 14. Support Tickets RLS & Policies
-alter table support_tickets enable row level security;
-
+-- Support Tickets RLS & Policies
 create policy "Allow select support_tickets for owner or Superadmin" on support_tickets for select
   using (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin'
@@ -356,16 +539,14 @@ create policy "Allow delete support_tickets for owner or Superadmin" on support_
     or user_id = auth.uid()
   );
 
--- 15. Page Views RLS & Policies
-alter table page_views enable row level security;
-
+-- Page Views RLS & Policies
 create policy "Allow insert page_views for authenticated" on page_views for insert
   with check (auth.uid() is not null);
 
 create policy "Allow select page_views for Superadmin" on page_views for select
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'Superadmin');
 
--- 16. Admin Update User Password RPC (Superadmin power)
+-- 19. Admin Update User Password RPC (Superadmin power)
 create or replace function public.admin_update_user_password(target_user_id uuid, new_password text)
 returns void as $$
 begin
@@ -379,7 +560,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
--- 17. Admin Delete User RPC (Superadmin and SenMaster power)
+-- 20. Admin Delete User RPC (Superadmin and SenMaster power)
 create or replace function public.admin_delete_user(target_user_id uuid)
 returns void as $$
 declare
@@ -417,4 +598,3 @@ begin
   delete from auth.users where id = target_user_id;
 end;
 $$ language plpgsql security definer;
-

@@ -101,7 +101,7 @@
     <main
       class="flex-1 flex flex-col h-full overflow-hidden relative pb-16 md:pb-0"
     >
-      <Header
+      <AppHeader
         :active-tab="activeTab"
         :refs-sub-tab-title="refsSubTabTitle"
         :search-query="searchQuery"
@@ -206,7 +206,7 @@ import RefModal from "./components/modals/RefModal.vue";
 import UserConfigModal from "./components/modals/UserConfigModal.vue";
 import WelcomeScreen from "./views/WelcomeScreen.vue";
 import Sidebar from "./components/layout/Sidebar.vue";
-import Header from "./components/layout/Header.vue";
+import AppHeader from "./components/layout/Header.vue";
 import MobileNav from "./components/layout/MobileNav.vue";
 import GameContainer from "./games/GameContainer.vue";
 
@@ -220,7 +220,7 @@ export default {
     UserConfigModal,
     WelcomeScreen,
     Sidebar,
-    Header,
+    AppHeader,
     MobileNav,
     GameContainer,
   },
@@ -435,15 +435,8 @@ export default {
   },
   mounted() {
     this.loadWelcomeScreenInfo();
-    try {
-      let savedUser = localStorage.getItem("currentUser");
-      if (savedUser) {
-        this.user = JSON.parse(savedUser);
-        this.loadInitialData();
-      }
-    } catch (e) {
-      console.error("Failed to parse saved user", e);
-      localStorage.removeItem("currentUser");
+    if (this.user) {
+      this.loadInitialData();
     }
   },
   methods: {

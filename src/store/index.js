@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import router from "../router";
 import { 
   supabase, 
+  toApp,
   loginUser, 
   registerUserWithOrg, 
   approveUser, 
@@ -106,6 +107,32 @@ export const useMainStore = defineStore("main", {
     },
   },
   actions: {
+    async initAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !session.user) {
+          this.user = null;
+          localStorage.removeItem("currentUser");
+          return null;
+        }
+        const { data: profile, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        if (error || !profile || (profile.status !== "Approved" && profile.role !== "Superadmin")) {
+          await this.logout();
+          return null;
+        }
+        const appUser = toApp("users", profile);
+        this.user = appUser;
+        localStorage.setItem("currentUser", JSON.stringify(appUser));
+        return appUser;
+      } catch (err) {
+        console.warn("Session check failed:", err);
+        return this.user;
+      }
+    },
     async login(username, password) {
       let res = await loginUser(username, password);
       this.user = res;
@@ -316,10 +343,26 @@ export const useMainStore = defineStore("main", {
         organizationbrands: [],
         organizationmodels: [],
         globalbrands: [],
-        globalmodels: []
+        globalmodels: [],
+        subscriptionlogs: [],
+        supporttickets: []
       };
       this.syncStatus = "synced";
       localStorage.removeItem("currentUser");
+    },
+    setUsers(users) {
+      this.db.users = users;
+    },
+    updateUserInStore(userData) {
+      const idx = this.db.users.findIndex(u => u.ID === userData.ID);
+      if (idx !== -1) {
+        this.db.users[idx] = { ...this.db.users[idx], ...userData };
+      } else {
+        this.db.users.push(userData);
+      }
+    },
+    deleteUserInStore(userId) {
+      this.db.users = this.db.users.filter(u => u.ID !== userId);
     },
     async dispatchSync(taskName, payload, sheet = null) {
       this.isSyncing = true;

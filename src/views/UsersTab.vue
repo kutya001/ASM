@@ -112,23 +112,7 @@
               </template>
             </div>
 
-            <!-- Password display for administrators with toggle -->
-            <div v-if="isGlobalAdmin" class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10.5px]">
-              <span class="text-slate-400 font-bold">Пароль:</span>
-              <span class="font-mono font-bold text-slate-700 bg-slate-50 border border-slate-150 rounded px-1.5 py-0.5 leading-none">
-                {{ visiblePasswords[u.ID] ? (u.Password || '—') : '••••••••' }}
-              </span>
-              <button
-                type="button"
-                @click="togglePassword(u.ID)"
-                class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition border-none bg-transparent cursor-pointer flex items-center justify-center"
-                title="Показать / скрыть пароль"
-              >
-                <span class="material-symbols-outlined text-[15px]">
-                  {{ visiblePasswords[u.ID] ? 'visibility_off' : 'visibility' }}
-                </span>
-              </button>
-            </div>
+
           </div>
         </div>
 
@@ -209,7 +193,6 @@ export default {
     return {
       selectedRole: "all",
       selectedStatus: "all",
-      visiblePasswords: {},
       roles: [
         { val: "all", lbl: "Все роли" },
         { val: "Superadmin", lbl: "Админ" },
@@ -241,7 +224,7 @@ export default {
       return org ? org.Name : "—";
     },
     filteredUsers() {
-      let list = this.db.users || [];
+      let list = (this.store.db && this.store.db.users) || this.db.users || [];
 
       // Filter by organization if not Superadmin
       if (!this.isGlobalAdmin && this.store.user) {
@@ -275,12 +258,10 @@ export default {
     }
   },
   methods: {
-    togglePassword(id) {
-      this.visiblePasswords[id] = !this.visiblePasswords[id];
-    },
     getOrganizationName(orgId) {
-      if (!this.db.organizations) return "—";
-      const org = this.db.organizations.find(o => o.ID === orgId);
+      const orgs = (this.store.db && this.store.db.organizations) || this.db.organizations;
+      if (!orgs) return "—";
+      const org = orgs.find(o => o.ID === orgId);
       return org ? org.Name : "—";
     },
     canDeleteUser(u) {
@@ -298,9 +279,7 @@ export default {
         return;
       }
       try {
-        if (this.db.users) {
-          this.db.users = this.db.users.filter(x => x.ID !== u.ID);
-        }
+        this.store.deleteUserInStore(u.ID);
         await this.store.dispatchSync("deleteRow", u.ID, "Users");
         this.store.showToast(`Сотрудник @${u.Username} удален`);
       } catch (err) {

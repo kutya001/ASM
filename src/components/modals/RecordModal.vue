@@ -1498,7 +1498,7 @@ export default {
       if (this.applicationRef) {
         const appTimestamp = this.applicationRef["Отметка времени"];
 
-        // Optimistic local state update for applications
+        // Optimistic local state update for applications if present
         if (this.store.db.applications) {
           const idx = this.store.db.applications.findIndex((a) => a["Отметка времени"] === appTimestamp);
           if (idx > -1) {
@@ -1506,14 +1506,6 @@ export default {
             this.store.db.applications[idx]["IDRecords"] = payload.ID;
           }
         }
-
-        // Dispatch sync update to GAS on Заявки на Запись sheet
-        const appPayload = {
-          ID: appTimestamp,
-          "Статус Заявки": "Создана запись",
-          "IDRecords": payload.ID
-        };
-        await this.store.dispatchSync("updateRow", appPayload, "Заявки на Запись");
         this.applicationRef = null;
       }
 

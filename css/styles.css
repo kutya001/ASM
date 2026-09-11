@@ -87,29 +87,20 @@ article:hover {
     background-color: #f8fafc !important;
 }
 
-/* Standard Button Rounding Reset */
-button, .btn {
+.btn {
     border-radius: 12px;
     font-weight: 700;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Smooth Button Hover Enhancements */
-button:hover:not(:disabled), .btn:hover:not(:disabled) {
+.btn:hover:not(:disabled) {
     transform: translateY(-1px);
     filter: brightness(1.05);
 }
 
-button:active:not(:disabled), .btn:active:not(:disabled) {
+.btn:active:not(:disabled) {
     transform: translateY(0);
     filter: brightness(0.95);
-}
-
-/* Badges Soft-Rounding */
-span.rounded-md, span.rounded-lg {
-    border-radius: 9999px; /* Soft pill-shaped badges across the dashboard */
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
 }
 
 /* Custom Scrollbar */
@@ -126,4 +117,10 @@ span.rounded-md, span.rounded-lg {
 }
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+}
+
+/* Hide Mobile Bottom Nav when modal forms or detail overlays are open */
+body.modal-open nav.md\:hidden,
+body.dialog-open nav.md\:hidden {
+  display: none !important;
 }
