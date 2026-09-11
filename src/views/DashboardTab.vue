@@ -1,62 +1,63 @@
 <template>
-          <div
-            class="max-w-2xl mx-auto w-full space-y-4 fade-transition pb-20"
-          >
-            <!-- Period Selector -->
-            <div class="flex gap-2 items-center">
-              <div
-                class="flex-1 flex gap-1 p-1 bg-slate-100 hover:bg-slate-150 transition-colors border border-slate-200/50 rounded-xl"
-              >
-                <button
-                  id="dash-period-day"
-                  class="flex-1 py-1 rounded-[8px] text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border-0"
-                  :class="
-                    dashboardPeriod === 'day'
-                      ? 'bg-white text-indigo-600 shadow-sm'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800'
-                  "
-                  @click="dashboardPeriod = 'day'"
-                >
-                  День
-                </button>
-                <button
-                  id="dash-period-week"
-                  class="flex-1 py-1 rounded-[8px] text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border-0"
-                  :class="
-                    dashboardPeriod === 'week'
-                      ? 'bg-white text-indigo-600 shadow-sm'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800'
-                  "
-                  @click="dashboardPeriod = 'week'"
-                >
-                  Неделя
-                </button>
-                <button
-                  id="dash-period-month"
-                  class="flex-1 py-1 rounded-[8px] text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border-0"
-                  :class="
-                    dashboardPeriod === 'month'
-                      ? 'bg-white text-indigo-600 shadow-sm'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800'
-                  "
-                  @click="dashboardPeriod = 'month'"
-                >
-                  Месяц
-                </button>
-                <button
-                  id="dash-period-all"
-                  class="flex-1 py-1 rounded-[8px] text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border-0"
-                  :class="
-                    dashboardPeriod === 'all'
-                      ? 'bg-white text-indigo-600 shadow-sm'
-                      : 'bg-transparent text-slate-500 hover:text-slate-800'
-                  "
-                  @click="dashboardPeriod = 'all'"
-                >
-                  Все
-                </button>
-              </div>
-            </div>
+  <div class="max-w-7xl mx-auto w-full space-y-5 fade-transition pb-24 px-1 sm:px-3">
+    <!-- Period Selector & Summary Header -->
+    <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      <div class="flex gap-1 p-1 bg-slate-100 hover:bg-slate-150 transition-colors border border-slate-200/50 rounded-xl w-full sm:max-w-md">
+        <button
+          id="dash-period-day"
+          class="flex-1 py-1.5 rounded-[8px] text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border-0"
+          :class="
+            dashboardPeriod === 'day'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'bg-transparent text-slate-500 hover:text-slate-800'
+          "
+          @click="dashboardPeriod = 'day'"
+        >
+          День
+        </button>
+        <button
+          id="dash-period-week"
+          class="flex-1 py-1.5 rounded-[8px] text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border-0"
+          :class="
+            dashboardPeriod === 'week'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'bg-transparent text-slate-500 hover:text-slate-800'
+          "
+          @click="dashboardPeriod = 'week'"
+        >
+          Неделя
+        </button>
+        <button
+          id="dash-period-month"
+          class="flex-1 py-1.5 rounded-[8px] text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border-0"
+          :class="
+            dashboardPeriod === 'month'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'bg-transparent text-slate-500 hover:text-slate-800'
+          "
+          @click="dashboardPeriod = 'month'"
+        >
+          Месяц
+        </button>
+        <button
+          id="dash-period-all"
+          class="flex-1 py-1.5 rounded-[8px] text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border-0"
+          :class="
+            dashboardPeriod === 'all'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'bg-transparent text-slate-500 hover:text-slate-800'
+          "
+          @click="dashboardPeriod = 'all'"
+        >
+          Все
+        </button>
+      </div>
+
+      <div class="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-500 bg-white border border-slate-200/60 px-3 py-1.5 rounded-xl shadow-xs">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>Всего завершено: <strong>{{ dashStats.count }}</strong> заказов</span>
+      </div>
+    </div>
 
             <!-- Sliding Advanced Filters -->
             <div
@@ -196,109 +197,99 @@
               </div>
             </div>
 
-            <!-- Combined Hero Stats (Compact) -->
-            <div class="space-y-3">
-              <!-- Revenue Card -->
+            <!-- 4 KPI Hero Stats Cards (Responsive Grid: 2 cols on mobile, 4 cols on desktop) -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5" id="dash-hero-grid">
+              <!-- Card 1: Revenue -->
               <div
-                class="bg-indigo-600 rounded-2xl p-4 text-white shadow-md border border-indigo-500/10 flex items-center justify-between relative overflow-hidden text-left"
+                class="bg-indigo-600 rounded-2xl p-4 text-white shadow-md border border-indigo-500/10 flex items-center justify-between relative overflow-hidden text-left col-span-2 sm:col-span-1"
                 id="dash-hero-revenue"
               >
                 <div
-                  class="absolute right-0 bottom-0 translate-x-3 translate-y-3 opacity-[0.06] text-white pointer-events-none select-none"
+                  class="absolute right-0 bottom-0 translate-x-3 translate-y-3 opacity-[0.08] text-white pointer-events-none select-none"
                 >
-                  <span class="material-symbols-outlined text-[100px]"
-                    >currency_ruble</span
-                  >
+                  <span class="material-symbols-outlined text-[90px]">payments</span>
                 </div>
                 <div class="relative z-10">
-                  <span
-                    class="text-indigo-200 text-[9px] font-bold uppercase tracking-wider"
-                    >Выручка за период</span
-                  >
-                  <h2
-                    class="font-heading text-2xl font-black tracking-tight mt-0.5"
-                  >
-                    {{ dashStats.sum.toLocaleString() }} KGS
+                  <span class="text-indigo-200 text-[9px] font-bold uppercase tracking-wider block">Выручка за период</span>
+                  <h2 class="font-heading text-xl sm:text-2xl font-black tracking-tight mt-0.5 mb-1">
+                    {{ dashStats.sum.toLocaleString() }} <span class="text-xs font-bold font-sans">KGS</span>
                   </h2>
-                  <div
-                    class="flex items-center gap-1 mt-1 text-[9px] text-indigo-100 font-medium"
-                  >
-                    <span class="material-symbols-outlined text-[11px]"
-                      >analytics</span
-                    >
-                    <span>Только завершенные заказы</span>
+                  <div class="flex items-center gap-1 text-[9px] text-indigo-100 font-medium">
+                    <span class="material-symbols-outlined text-[12px]">analytics</span>
+                    <span>Только завершенные</span>
                   </div>
                 </div>
-                <span
-                  class="material-symbols-outlined text-white text-[16px] bg-white/20 rounded-xl p-2 shrink-0 relative z-10"
-                  >trending_up</span
-                >
+                <span class="material-symbols-outlined text-white text-[18px] bg-white/20 rounded-xl p-2.5 shrink-0 relative z-10">
+                  trending_up
+                </span>
               </div>
 
-              <!-- Compact Stats Grid -->
-              <div class="grid grid-cols-2 gap-3" id="dash-stats-grid">
-                <!-- Orders -->
-                <div
-                  class="bg-white rounded-2xl p-3 shadow-sm border border-slate-150 flex items-center justify-between text-left"
-                  id="dash-stat-orders"
-                >
-                  <div>
-                    <span
-                      class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block mb-0.5"
-                      >Выполнено</span
-                    >
-                    <div
-                      class="font-heading text-xl font-black text-slate-800 leading-tight"
-                    >
-                      {{ dashStats.count }}
-                    </div>
-                    <span class="text-[9px] text-slate-500 font-bold uppercase"
-                      >заказов</span
-                    >
+              <!-- Card 2: Completed Orders -->
+              <div
+                class="bg-white rounded-2xl p-4 shadow-sm border border-slate-150 flex items-center justify-between text-left relative overflow-hidden"
+                id="dash-stat-orders"
+              >
+                <div>
+                  <span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block mb-0.5">Выполнено</span>
+                  <div class="font-heading text-xl sm:text-2xl font-black text-slate-800 leading-tight">
+                    {{ dashStats.count }}
                   </div>
-                  <span
-                    class="material-symbols-outlined text-indigo-500 bg-indigo-55/10 rounded-lg p-1.5 text-[16px] shrink-0"
-                    >check_circle</span
-                  >
+                  <span class="text-[9px] text-slate-500 font-bold uppercase">заказов в базе</span>
                 </div>
-                <!-- Avg check -->
-                <div
-                  class="bg-white rounded-2xl p-3 shadow-sm border border-slate-150 flex items-center justify-between text-left"
-                  id="dash-stat-avg-check"
-                >
-                  <div>
-                    <span
-                      class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block mb-0.5"
-                      >Средний чек</span
-                    >
-                    <div
-                      class="font-heading text-lg font-black text-slate-800 leading-tight"
-                    >
-                      {{
-                        dashStats.count
-                          ? Math.round(
-                              dashStats.sum / dashStats.count,
-                            ).toLocaleString()
-                          : 0
-                      }}
-                    </div>
-                    <span
-                      class="text-[9px] text-slate-500 font-semibold uppercase"
-                      >KGS</span
-                    >
+                <span class="material-symbols-outlined text-indigo-600 bg-indigo-50 rounded-xl p-2.5 text-[18px] shrink-0 border border-indigo-100/50">
+                  check_circle
+                </span>
+              </div>
+
+              <!-- Card 3: Avg Check -->
+              <div
+                class="bg-white rounded-2xl p-4 shadow-sm border border-slate-150 flex items-center justify-between text-left relative overflow-hidden"
+                id="dash-stat-avg-check"
+              >
+                <div>
+                  <span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block mb-0.5">Средний чек</span>
+                  <div class="font-heading text-xl sm:text-2xl font-black text-slate-800 leading-tight">
+                    {{
+                      dashStats.count
+                        ? Math.round(dashStats.sum / dashStats.count).toLocaleString()
+                        : 0
+                    }}
                   </div>
-                  <span
-                    class="material-symbols-outlined text-emerald-500 bg-emerald-55/10 rounded-lg p-1.5 text-[16px] shrink-0"
-                    >payments</span
-                  >
+                  <span class="text-[9px] text-slate-500 font-bold uppercase">KGS / заказ</span>
                 </div>
+                <span class="material-symbols-outlined text-emerald-600 bg-emerald-50 rounded-xl p-2.5 text-[18px] shrink-0 border border-emerald-100/50">
+                  receipt_long
+                </span>
+              </div>
+
+              <!-- Card 4: Peak Metric / Efficiency -->
+              <div
+                class="bg-white rounded-2xl p-4 shadow-sm border border-slate-150 flex items-center justify-between text-left relative overflow-hidden col-span-2 sm:col-span-1"
+                id="dash-stat-peak"
+              >
+                <div>
+                  <span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block mb-0.5">Пиковый интервал</span>
+                  <div class="font-heading text-lg sm:text-xl font-black text-slate-800 leading-tight truncate max-w-[140px]" :title="dashboardInsights.peakLabel">
+                    {{ dashboardInsights.peakLabel || '—' }}
+                  </div>
+                  <span class="text-[9px] text-indigo-600 font-black uppercase">
+                    {{ dashboardInsights.peakAmount ? dashboardInsights.peakAmount.toLocaleString() + ' KGS' : '0 KGS' }}
+                  </span>
+                </div>
+                <span class="material-symbols-outlined text-amber-500 bg-amber-50 rounded-xl p-2.5 text-[18px] shrink-0 border border-amber-100/50">
+                  award_star
+                </span>
               </div>
             </div>
 
-            <!-- NEW DYNAMIC INTERACTIVE CHART -->
-            <div
-              class="bg-white rounded-2xl p-4 border border-slate-150 shadow-sm text-left flex flex-col gap-3"
-            >
+            <!-- Main Analytics Grid: Left 2 Cols (Chart, Insights, Table) + Right 1 Col (Rankings) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <!-- Left Column: Chart, Insights, Completed Orders Journal -->
+              <div class="lg:col-span-2 space-y-6">
+                <!-- NEW DYNAMIC INTERACTIVE CHART -->
+                <div
+                  class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-150 shadow-sm text-left flex flex-col gap-3"
+                >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1.5">
                   <span
@@ -595,9 +586,106 @@
               </div>
             </div>
 
+            <!-- Desktop Orders Journal Table (hidden md:block) -->
+            <div class="hidden md:block bg-white rounded-2xl border border-slate-150 shadow-sm overflow-hidden text-left">
+              <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-indigo-500 text-[18px]">table_chart</span>
+                  <h3 class="font-bold text-xs text-slate-800 font-heading uppercase tracking-wider m-0">Журнал выполненных заказов</h3>
+                </div>
+                <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/50">
+                  {{ sortedDashRecords.length }} заказов
+                </span>
+              </div>
+              
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-50/70 border-b border-slate-150 text-[10px] font-black text-slate-400 uppercase tracking-wider select-none">
+                      <th @click="sortDashRecords('date')" class="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition whitespace-nowrap">
+                        <div class="flex items-center gap-1">
+                          <span>Дата</span>
+                          <span class="material-symbols-outlined text-[12px]">{{ getSortDashIcon('date') }}</span>
+                        </div>
+                      </th>
+                      <th @click="sortDashRecords('car')" class="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition whitespace-nowrap">
+                        <div class="flex items-center gap-1">
+                          <span>Авто / Гос.номер</span>
+                          <span class="material-symbols-outlined text-[12px]">{{ getSortDashIcon('car') }}</span>
+                        </div>
+                      </th>
+                      <th class="px-4 py-2.5">Клиент</th>
+                      <th @click="sortDashRecords('master')" class="px-4 py-2.5 cursor-pointer hover:bg-slate-100 transition whitespace-nowrap">
+                        <div class="flex items-center gap-1">
+                          <span>Мастер</span>
+                          <span class="material-symbols-outlined text-[12px]">{{ getSortDashIcon('master') }}</span>
+                        </div>
+                      </th>
+                      <th class="px-4 py-2.5">Услуги</th>
+                      <th @click="sortDashRecords('amount')" class="px-4 py-2.5 text-right cursor-pointer hover:bg-slate-100 transition whitespace-nowrap">
+                        <div class="flex items-center justify-end gap-1">
+                          <span>Сумма</span>
+                          <span class="material-symbols-outlined text-[12px]">{{ getSortDashIcon('amount') }}</span>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 font-medium">
+                    <tr v-for="r in paginatedDashRecords" :key="r.ID" class="hover:bg-slate-50/50 transition-colors">
+                      <td class="px-4 py-2.5 whitespace-nowrap text-slate-700">
+                        <div class="font-bold">{{ formatDashDate(r).date }}</div>
+                        <div class="text-[10px] text-slate-400">{{ formatDashDate(r).time }}</div>
+                      </td>
+                      <td class="px-4 py-2.5">
+                        <div class="font-mono font-bold text-slate-900 uppercase tracking-wider">{{ r.CarNumber || '—' }}</div>
+                        <div class="text-[10px] text-slate-500 font-sans">{{ getBrandName(r.BrandID) }} {{ getModelName(r.ModelID) }}</div>
+                      </td>
+                      <td class="px-4 py-2.5 text-slate-700">
+                        <div class="font-bold text-xs">{{ r.ClientName || '—' }}</div>
+                        <div class="text-[10px] text-slate-400">{{ r.Phone || '' }}</div>
+                      </td>
+                      <td class="px-4 py-2.5 whitespace-nowrap text-slate-700">
+                        <span class="inline-flex items-center gap-1.5 font-semibold">
+                          <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                          {{ getMasterName(r.MasterID) }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-2.5 max-w-[200px] truncate text-slate-500 text-[11px]" :title="getRecordServicesText(r)">
+                        {{ getRecordServicesText(r) }}
+                      </td>
+                      <td class="px-4 py-2.5 text-right whitespace-nowrap font-heading font-black text-slate-900 text-xs">
+                        {{ Number(r.TotalAmount || 0).toLocaleString() }} KGS
+                      </td>
+                    </tr>
+                    <tr v-if="paginatedDashRecords.length === 0">
+                      <td colspan="6" class="py-8 text-center text-slate-400 text-xs font-semibold">
+                        Нет завершенных заказов за выбранный период
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination footer if more than recordsPerPage -->
+              <div v-if="sortedDashRecords.length > recordsPerPage" class="px-4 py-2.5 bg-slate-50 border-t border-slate-150 flex items-center justify-between text-xs font-semibold text-slate-600">
+                <span>Страница {{ recordsPage }} из {{ totalDashPages }} (всего {{ sortedDashRecords.length }})</span>
+                <div class="flex items-center gap-1.5">
+                  <button @click="recordsPage = Math.max(1, recordsPage - 1)" :disabled="recordsPage === 1" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs transition">
+                    Назад
+                  </button>
+                  <button @click="recordsPage = Math.min(totalDashPages, recordsPage + 1)" :disabled="recordsPage === totalDashPages" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs transition">
+                    Вперед
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div> <!-- Close Left Column -->
+
+          <!-- Right Column: 1 Col on lg (Rankings / Leaderboards) -->
+          <div class="lg:col-span-1 space-y-6">
             <!-- Mechanic Leaderboard (Compact) -->
             <div
-              class="bg-white rounded-2xl p-3.5 border border-slate-150 shadow-sm text-left"
+              class="bg-white rounded-2xl p-4 border border-slate-150 shadow-sm text-left"
               id="dash-leader-masters"
             >
               <div class="flex items-center gap-1.5 mb-3">
@@ -811,7 +899,9 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> <!-- Close Right Column -->
+        </div> <!-- Close Main Analytics Grid -->
+      </div> <!-- Close Outer Container -->
 </template>
 <script>
 export default {
@@ -832,9 +922,51 @@ export default {
       chartInterval: "day",
       hoveredBarIndex: null,
       expandedBrands: [],
+      recordsPage: 1,
+      recordsPerPage: 10,
+      dashSortKey: "date",
+      dashSortAsc: false,
     };
   },
   computed: {
+    sortedDashRecords() {
+      const recs = [...this.filteredDashRecords];
+      const key = this.dashSortKey;
+      const asc = this.dashSortAsc;
+      
+      return recs.sort((a, b) => {
+        let valA, valB;
+        if (key === 'date') {
+          const dateA = this.dashDateType === 'checkin' ? a.StartTime : (a.EndTime || a.StartTime);
+          const dateB = this.dashDateType === 'checkin' ? b.StartTime : (b.EndTime || b.StartTime);
+          valA = new Date(dateA || 0).getTime();
+          valB = new Date(dateB || 0).getTime();
+        } else if (key === 'car') {
+          valA = String(a.CarNumber || '').toLowerCase();
+          valB = String(b.CarNumber || '').toLowerCase();
+        } else if (key === 'master') {
+          valA = String(this.getMasterName(a.MasterID) || '').toLowerCase();
+          valB = String(this.getMasterName(b.MasterID) || '').toLowerCase();
+        } else if (key === 'amount') {
+          valA = Number(a.TotalAmount) || 0;
+          valB = Number(b.TotalAmount) || 0;
+        } else {
+          valA = a[key] || '';
+          valB = b[key] || '';
+        }
+
+        if (valA < valB) return asc ? -1 : 1;
+        if (valA > valB) return asc ? 1 : -1;
+        return 0;
+      });
+    },
+    totalDashPages() {
+      return Math.ceil(this.sortedDashRecords.length / this.recordsPerPage) || 1;
+    },
+    paginatedDashRecords() {
+      const start = (this.recordsPage - 1) * this.recordsPerPage;
+      return this.sortedDashRecords.slice(start, start + this.recordsPerPage);
+    },
     filteredDashRecords() {
       if (!this.db || !this.db.records) return [];
       let now = new Date();
@@ -1200,6 +1332,45 @@ export default {
       let m = this.db.models.find((x) => x.ID == id);
       return m ? m.Name : '';
     },
+    sortDashRecords(key) {
+      if (this.dashSortKey === key) {
+        this.dashSortAsc = !this.dashSortAsc;
+      } else {
+        this.dashSortKey = key;
+        this.dashSortAsc = false;
+      }
+      this.recordsPage = 1;
+    },
+    getSortDashIcon(key) {
+      if (this.dashSortKey !== key) return 'unfold_more';
+      return this.dashSortAsc ? 'arrow_upward' : 'arrow_downward';
+    },
+    formatDashDate(r) {
+      const dStr = this.dashDateType === 'checkin' ? r.StartTime : (r.EndTime || r.StartTime);
+      if (!dStr) return { date: '—', time: '' };
+      const d = new Date(dStr);
+      if (isNaN(d.getTime())) return { date: dStr, time: '' };
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return { date: `${dd}.${mm}.${d.getFullYear()}`, time: `${hh}:${min}` };
+    },
+    getRecordServicesText(r) {
+      if (!r.ServicesJSON) return "—";
+      try {
+        const list = typeof r.ServicesJSON === 'string' ? JSON.parse(r.ServicesJSON) : r.ServicesJSON;
+        if (!Array.isArray(list) || list.length === 0) return "—";
+        return list.map(item => {
+          if (item && typeof item === 'object') {
+            return item.name || (this.db.services?.find(s => s.ID == item.id)?.Name) || 'Услуга';
+          }
+          return this.db.services?.find(s => s.ID == item)?.Name || 'Услуга';
+        }).join(", ");
+      } catch (e) {
+        return "—";
+      }
+    }
   }
 };
 </script>

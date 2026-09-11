@@ -1,13 +1,13 @@
 <template>
-  <div class="space-y-4 max-w-2xl mx-auto w-full pb-20 animate-fade-in">
+  <div class="space-y-4 max-w-7xl mx-auto w-full pb-24 animate-fade-in px-1 sm:px-3">
     <!-- Header info line -->
     <div class="flex justify-between items-center px-1">
       <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider font-heading flex items-center gap-1.5">
         <span class="material-symbols-outlined text-[16px] text-indigo-500">group</span>
         Штат автосервиса
       </h2>
-      <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200/40">
-        {{ filteredUsers.length }} из {{ db.users ? db.users.length : 0 }} чел.
+      <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/40">
+        {{ sortedUsers.length }} из {{ (db.users && db.users.length) || 0 }} чел.
       </span>
     </div>
 
@@ -24,41 +24,200 @@
     </div>
 
     <!-- Collapsible Advanced Filters -->
-    <div v-if="isFiltersExpanded" class="bg-white border border-slate-150 p-3 rounded-2xl shadow-sm space-y-3 animate-fade-in">
-      <div>
-        <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Роль</label>
-        <div class="flex flex-wrap gap-1">
-          <button
-            v-for="r in filteredRolesList"
-            :key="r.val"
-            @click="selectedRole = r.val"
-            class="px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer"
-            :class="selectedRole === r.val ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'"
-          >
-            {{ r.lbl }}
-          </button>
+    <div v-if="isFiltersExpanded" class="bg-white border border-slate-150 p-4 rounded-2xl shadow-sm space-y-3 animate-fade-in">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Роль</label>
+          <div class="flex flex-wrap gap-1">
+            <button
+              v-for="r in filteredRolesList"
+              :key="r.val"
+              @click="selectedRole = r.val"
+              class="px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer"
+              :class="selectedRole === r.val ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'"
+            >
+              {{ r.lbl }}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Допуск к системе</label>
-        <div class="flex flex-wrap gap-1">
-          <button
-            v-for="s in statuses"
-            :key="s.val"
-            @click="selectedStatus = s.val"
-            class="px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer"
-            :class="selectedStatus === s.val ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'"
-          >
-            {{ s.lbl }}
-          </button>
+        <div>
+          <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Допуск к системе</label>
+          <div class="flex flex-wrap gap-1">
+            <button
+              v-for="s in statuses"
+              :key="s.val"
+              @click="selectedStatus = s.val"
+              class="px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer"
+              :class="selectedStatus === s.val ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'"
+            >
+              {{ s.lbl }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="space-y-2.5">
+    <!-- DESKTOP TABLE VIEW (hidden md:block) -->
+    <div class="hidden md:block bg-white border border-slate-150 rounded-2xl shadow-sm overflow-hidden text-left">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-50/70 border-b border-slate-150 text-[10px] font-black text-slate-400 uppercase tracking-wider select-none">
+              <th @click="sortUsers('name')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition whitespace-nowrap">
+                <div class="flex items-center gap-1">
+                  <span>Сотрудник</span>
+                  <span class="material-symbols-outlined text-xs">{{ getUserSortIcon('name') }}</span>
+                </div>
+              </th>
+              <th class="px-4 py-3">Контакты</th>
+              <th @click="sortUsers('role')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition whitespace-nowrap">
+                <div class="flex items-center gap-1">
+                  <span>Роль</span>
+                  <span class="material-symbols-outlined text-xs">{{ getUserSortIcon('role') }}</span>
+                </div>
+              </th>
+              <th v-if="isGlobalAdmin" @click="sortUsers('org')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition whitespace-nowrap">
+                <div class="flex items-center gap-1">
+                  <span>Организация</span>
+                  <span class="material-symbols-outlined text-xs">{{ getUserSortIcon('org') }}</span>
+                </div>
+              </th>
+              <th @click="sortUsers('status')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition whitespace-nowrap">
+                <div class="flex items-center gap-1">
+                  <span>Допуск</span>
+                  <span class="material-symbols-outlined text-xs">{{ getUserSortIcon('status') }}</span>
+                </div>
+              </th>
+              <th @click="sortUsers('orders')" class="px-4 py-3 cursor-pointer hover:bg-slate-100 transition whitespace-nowrap text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <span>Заказов</span>
+                  <span class="material-symbols-outlined text-xs">{{ getUserSortIcon('orders') }}</span>
+                </div>
+              </th>
+              <th class="px-4 py-3 text-right">Действия</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-semibold">
+            <tr v-for="u in sortedUsers" :key="u.ID" class="hover:bg-slate-50/50 transition-colors">
+              <!-- Avatar & Name -->
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-slate-100 text-indigo-700 font-extrabold text-xs flex items-center justify-center shrink-0 border border-slate-200/60 uppercase select-none">
+                    {{ (u.Name || u.Username || 'US').slice(0, 2) }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-slate-800 text-xs truncate">{{ u.Name || u.Username }}</div>
+                    <div class="text-[10px] text-slate-400 truncate">@{{ u.Username }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Contacts -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                <a
+                  v-if="u.Phone"
+                  :href="'tel:' + u.Phone"
+                  class="text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 font-bold text-xs"
+                >
+                  <span class="material-symbols-outlined text-[13px]">phone</span>
+                  {{ u.Phone }}
+                </a>
+                <span v-else class="text-slate-350 text-xs font-normal">нет телефона</span>
+              </td>
+
+              <!-- Role -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span
+                  class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider font-mono inline-block"
+                  :class="u.Role === 'Superadmin'
+                    ? 'bg-red-50 text-red-600 border border-red-150/50'
+                    : u.Role === 'SenMaster'
+                      ? 'bg-amber-50 text-amber-600 border border-amber-150/50'
+                      : 'bg-indigo-50 text-indigo-600 border border-indigo-150/50'"
+                >
+                  {{
+                    u.Role === "Superadmin"
+                      ? "Гл.Админ"
+                      : u.Role === "SenMaster"
+                        ? "Главный мастер"
+                        : "Мастер"
+                  }}
+                </span>
+              </td>
+
+              <!-- Organization (Superadmin) -->
+              <td v-if="isGlobalAdmin" class="px-4 py-3 whitespace-nowrap">
+                <span class="bg-indigo-50/80 text-indigo-750 px-2 py-0.5 rounded-md text-[10px] font-bold border border-indigo-100/40">
+                  {{ getOrganizationName(u.OrganizationID) }}
+                </span>
+              </td>
+
+              <!-- Status -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span
+                  class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border font-mono select-none inline-block"
+                  :class="
+                    u.Status === 'Approved'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-150/40'
+                      : 'bg-amber-50 text-amber-700 border-amber-150/40'
+                  "
+                >
+                  {{ u.Status === 'Approved' ? 'Допущен' : 'Ожидает' }}
+                </span>
+              </td>
+
+              <!-- Orders Count -->
+              <td class="px-4 py-3 text-center whitespace-nowrap">
+                <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-heading font-black bg-slate-100 text-slate-700 border border-slate-200/50">
+                  {{ getUserOrdersCount(u.ID) }}
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button
+                    v-if="u.Status === 'Pending'"
+                    @click="$emit('approve-user', u.ID)"
+                    class="h-7 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center gap-1 transition border-none cursor-pointer text-xs font-bold shadow-xs"
+                    title="Одобрить доступ"
+                  >
+                    <span class="material-symbols-outlined text-[14px] font-bold">done</span>
+                    <span>Одобрить</span>
+                  </button>
+                  <button
+                    @click="$emit('open-user-config', u)"
+                    class="w-7 h-7 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-600 rounded-lg flex items-center justify-center transition border-none cursor-pointer p-0"
+                    title="Настройки"
+                  >
+                    <span class="material-symbols-outlined text-[15px] font-bold">settings</span>
+                  </button>
+                  <button
+                    v-if="canDeleteUser(u)"
+                    @click="confirmDeleteUser(u)"
+                    class="w-7 h-7 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-lg flex items-center justify-center transition border-none cursor-pointer p-0"
+                    title="Удалить сотрудника"
+                  >
+                    <span class="material-symbols-outlined text-[15px] font-bold">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="sortedUsers.length === 0">
+              <td :colspan="isGlobalAdmin ? 7 : 6" class="py-10 text-center text-slate-400 font-medium text-xs">
+                Нет сотрудников, подходящих под критерии
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MOBILE CARDS VIEW (md:hidden) -->
+    <div class="md:hidden space-y-2.5">
       <div
-        v-for="u in filteredUsers"
+        v-for="u in sortedUsers"
         :key="u.ID"
         class="bg-white border border-slate-150/60 hover:border-indigo-150/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
       >
@@ -111,8 +270,6 @@
                 <span class="text-indigo-605 font-bold truncate">Орг: {{ getOrganizationName(u.OrganizationID) }}</span>
               </template>
             </div>
-
-
           </div>
         </div>
 
@@ -161,7 +318,7 @@
       </div>
 
       <div
-        v-if="filteredUsers.length === 0"
+        v-if="sortedUsers.length === 0"
         class="py-10 text-center text-slate-400 font-medium text-xs bg-white rounded-xl border border-slate-100"
       >
         Нет сотрудников, подходящих под критерии
@@ -193,6 +350,8 @@ export default {
     return {
       selectedRole: "all",
       selectedStatus: "all",
+      userSortKey: "name",
+      userSortAsc: true,
       roles: [
         { val: "all", lbl: "Все роли" },
         { val: "Superadmin", lbl: "Админ" },
@@ -255,9 +414,57 @@ export default {
       }
 
       return list;
+    },
+    sortedUsers() {
+      const list = [...this.filteredUsers];
+      const key = this.userSortKey;
+      const asc = this.userSortAsc;
+
+      return list.sort((a, b) => {
+        let valA, valB;
+        if (key === 'name') {
+          valA = String(a.Name || a.Username || '').toLowerCase();
+          valB = String(b.Name || b.Username || '').toLowerCase();
+        } else if (key === 'role') {
+          valA = String(a.Role || '').toLowerCase();
+          valB = String(b.Role || '').toLowerCase();
+        } else if (key === 'status') {
+          valA = String(a.Status || '').toLowerCase();
+          valB = String(b.Status || '').toLowerCase();
+        } else if (key === 'org') {
+          valA = String(this.getOrganizationName(a.OrganizationID) || '').toLowerCase();
+          valB = String(this.getOrganizationName(b.OrganizationID) || '').toLowerCase();
+        } else if (key === 'orders') {
+          valA = this.getUserOrdersCount(a.ID);
+          valB = this.getUserOrdersCount(b.ID);
+        } else {
+          valA = a[key] || '';
+          valB = b[key] || '';
+        }
+
+        if (valA < valB) return asc ? -1 : 1;
+        if (valA > valB) return asc ? 1 : -1;
+        return 0;
+      });
     }
   },
   methods: {
+    getUserOrdersCount(userId) {
+      if (!this.db || !this.db.records) return 0;
+      return this.db.records.filter(r => r.MasterID == userId && r.Status === 'Выполнен').length;
+    },
+    sortUsers(key) {
+      if (this.userSortKey === key) {
+        this.userSortAsc = !this.userSortAsc;
+      } else {
+        this.userSortKey = key;
+        this.userSortAsc = true;
+      }
+    },
+    getUserSortIcon(key) {
+      if (this.userSortKey !== key) return 'unfold_more';
+      return this.userSortAsc ? 'arrow_upward' : 'arrow_downward';
+    },
     getOrganizationName(orgId) {
       const orgs = (this.store.db && this.store.db.organizations) || this.db.organizations;
       if (!orgs) return "—";

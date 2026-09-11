@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 max-w-3xl mx-auto w-full pb-20 select-none">
+  <div class="space-y-5 max-w-7xl mx-auto w-full pb-24 select-none px-1 sm:px-3">
     <!-- Superadmin views -->
     <div v-if="isGlobalAdmin" class="fade-transition space-y-4">
       <!-- Admin Tab switcher -->
@@ -139,7 +139,7 @@
         </div>
 
         <!-- Dynamic Brand and Model Trees -->
-        <div class="space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
           <div
             v-for="group in adminGroupedModels"
             :key="group.brand.ID"
@@ -180,7 +180,7 @@
               </div>
             </div>
           </div>
-          <div v-if="adminGroupedModels.length === 0" class="bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
+          <div v-if="adminGroupedModels.length === 0" class="col-span-full bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
             По вашему запросу ничего не найдено.
           </div>
         </div>
@@ -253,6 +253,12 @@
             
             <!-- Category Services list -->
             <div v-if="isCategoryExpanded(group.category.ID)" class="divide-y divide-slate-100 bg-white animate-fade-in">
+              <!-- Desktop Table Header (hidden md:grid) -->
+              <div class="hidden md:grid grid-cols-12 gap-2 px-4 py-2 bg-slate-50/60 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 select-none">
+                <div class="col-span-8">Наименование услуги</div>
+                <div class="col-span-2">Тип</div>
+                <div class="col-span-2 text-right">Цена</div>
+              </div>
               <div
                 v-for="s in group.services"
                 :key="s.ID"
@@ -332,7 +338,7 @@
         </div>
 
         <!-- Dynamic Brand and Model Trees -->
-        <div class="space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
           <div
             v-for="b in filteredGlobalBrands"
             :key="b.ID"
@@ -394,7 +400,7 @@
               </div>
             </div>
           </div>
-          <div v-if="filteredGlobalBrands.length === 0" class="bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
+          <div v-if="filteredGlobalBrands.length === 0" class="col-span-full bg-white border border-slate-200 rounded-2xl py-12 text-center text-slate-400 font-bold text-xs px-6">
             По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска или фильтр «Мои».
           </div>
         </div>

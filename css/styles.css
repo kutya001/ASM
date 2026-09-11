@@ -150,3 +150,12 @@ body.modal-open nav.md\:hidden,
 body.dialog-open nav.md\:hidden {
   display: none !important;
 }
+
+/* Modal Centering Guarantee on Desktop */
+@media (min-width: 768px) {
+  .modal-dialog-centered {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+

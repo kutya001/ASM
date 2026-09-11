@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 max-w-6xl mx-auto w-full pb-20 animate-fade-in font-sans">
+  <div class="space-y-4 max-w-7xl mx-auto w-full pb-24 animate-fade-in px-1 sm:px-3 font-sans">
     <!-- Header -->
     <div class="flex justify-between items-center px-1">
       <h2 class="text-sm font-black text-slate-800 uppercase tracking-wider font-heading flex items-center gap-1.5">

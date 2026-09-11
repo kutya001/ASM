@@ -7,7 +7,7 @@
     aria-hidden="true"
   >
     <div
-      class="modal-dialog modal-fullscreen-md-down modal-lg modal-dialog-centered modal-dialog-scrollable m-0 md:m-auto"
+      class="modal-dialog modal-fullscreen-md-down modal-lg modal-dialog-centered modal-dialog-scrollable"
     >
       <div
         class="modal-content h-full md:h-auto md:max-h-[92vh] md:rounded-3xl border-0 shadow-2xl overflow-hidden font-sans bg-slate-50 flex flex-col relative"

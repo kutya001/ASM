@@ -41,7 +41,7 @@ const routes = [
     path: '/users',
     name: 'users',
     component: UsersTab,
-    meta: { requiresAuth: true, roles: ['SenMaster'] }
+    meta: { requiresAuth: true, roles: ['Superadmin', 'SenMaster'] }
   },
   {
     path: '/all_users',
