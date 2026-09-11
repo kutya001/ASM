@@ -135,22 +135,22 @@
                 </div>
               </div>
 
-              <!-- Status Filter Individual Buttons ("Islands" with shadows) -->
+              <!-- Status Filter Individual Buttons ("Islands" with soft rounding) -->
               <div class="flex gap-2 w-full">
                 <!-- Открыт -->
                 <button
-                  class="flex-1 min-w-[50px] flex h-9.5 items-center justify-center w-full rounded-xl transition-all cursor-pointer border-none shadow-md hover:shadow-lg focus:outline-none outline-none"
+                  class="status-filter-btn flex-1 min-w-[50px] flex h-10 items-center justify-center w-full rounded-2xl transition-all cursor-pointer border-none shadow-sm hover:shadow-md focus:outline-none outline-none"
                   :class="
                     activeStatuses.length === 1 &&
                     activeStatuses.includes('Открыт')
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-indigo-600 text-white shadow-indigo-200'
                       : 'bg-white text-slate-500 hover:text-slate-800'
                   "
                   @click="toggleStatus('Открыт')"
                   title="Открытые"
                 >
                   <span
-                    class="material-symbols-outlined text-[16px]"
+                    class="material-symbols-outlined text-[17px]"
                     :class="
                       activeStatuses.length === 1 &&
                       activeStatuses.includes('Открыт')
@@ -163,18 +163,18 @@
 
                 <!-- Выполнен -->
                 <button
-                  class="flex-1 min-w-[50px] flex h-9.5 items-center justify-center w-full rounded-xl transition-all cursor-pointer border-none shadow-md hover:shadow-lg focus:outline-none outline-none"
+                  class="status-filter-btn flex-1 min-w-[50px] flex h-10 items-center justify-center w-full rounded-2xl transition-all cursor-pointer border-none shadow-sm hover:shadow-md focus:outline-none outline-none"
                   :class="
                     activeStatuses.length === 1 &&
                     activeStatuses.includes('Выполнен')
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-emerald-600 text-white shadow-emerald-200'
                       : 'bg-white text-slate-500 hover:text-slate-800'
                   "
                   @click="toggleStatus('Выполнен')"
                   title="Выполненные"
                 >
                   <span
-                    class="material-symbols-outlined text-[16px]"
+                    class="material-symbols-outlined text-[17px]"
                     :class="
                       activeStatuses.length === 1 &&
                       activeStatuses.includes('Выполнен')
@@ -187,18 +187,18 @@
 
                 <!-- Отменён -->
                 <button
-                  class="flex-1 min-w-[50px] flex h-9.5 items-center justify-center w-full rounded-xl transition-all cursor-pointer border-none shadow-md hover:shadow-lg focus:outline-none outline-none"
+                  class="status-filter-btn flex-1 min-w-[50px] flex h-10 items-center justify-center w-full rounded-2xl transition-all cursor-pointer border-none shadow-sm hover:shadow-md focus:outline-none outline-none"
                   :class="
                     activeStatuses.length === 1 &&
                     activeStatuses.includes('Отменён')
-                      ? 'bg-rose-600 text-white'
+                      ? 'bg-rose-600 text-white shadow-rose-200'
                       : 'bg-white text-slate-500 hover:text-slate-800'
                   "
                   @click="toggleStatus('Отменён')"
                   title="Отменённые"
                 >
                   <span
-                    class="material-symbols-outlined text-[16px]"
+                    class="material-symbols-outlined text-[17px]"
                     :class="
                       activeStatuses.length === 1 &&
                       activeStatuses.includes('Отменён')
@@ -211,17 +211,17 @@
 
                 <!-- Все -->
                 <button
-                  class="flex-1 min-w-[50px] flex h-9.5 items-center justify-center w-full rounded-xl transition-all cursor-pointer border-none shadow-md hover:shadow-lg focus:outline-none outline-none"
+                  class="status-filter-btn flex-1 min-w-[50px] flex h-10 items-center justify-center w-full rounded-2xl transition-all cursor-pointer border-none shadow-sm hover:shadow-md focus:outline-none outline-none"
                   :class="
                     activeStatuses.length === 3
-                      ? 'bg-slate-800 text-white'
+                      ? 'bg-slate-800 text-white shadow-slate-300'
                       : 'bg-white text-slate-500 hover:text-slate-800'
                   "
                   @click="$emit('set-all-statuses')"
                   title="Все статусы"
                 >
                   <span
-                    class="material-symbols-outlined text-[16px]"
+                    class="material-symbols-outlined text-[17px]"
                     :class="
                       activeStatuses.length === 3
                         ? 'text-white'
@@ -763,19 +763,7 @@
                 </table>
               </div>
             </div>
-
-            <!-- FAB -->
-            <button
-              @click="openRecordModal()"
-              class="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-transform z-20 md:bottom-12 md:right-12"
-            >
-              <span
-                class="material-symbols-outlined text-[28px]"
-                style="font-variation-settings: &quot;wght&quot; 600"
-                >add</span
-              >
-            </button>
-</div>
+          </div>
 </template>
 <script>
 export default {

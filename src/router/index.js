@@ -11,6 +11,7 @@ const AllUsersTab = () => import('../views/AllUsersTab.vue');
 const PageAnalyticsTab = () => import('../views/PageAnalyticsTab.vue');
 const OrganizationsTab = () => import('../views/OrganizationsTab.vue');
 const TicketsTab = () => import('../views/TicketsTab.vue');
+const AllRecordsTab = () => import('../views/AllRecordsTab.vue');
 
 const routes = [
   {
@@ -65,6 +66,12 @@ const routes = [
     name: 'tickets',
     component: TicketsTab,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/all_records',
+    name: 'all_records',
+    component: AllRecordsTab,
+    meta: { requiresAuth: true, roles: ['Superadmin'] }
   },
   {
     path: '/:pathMatch(.*)*',

@@ -194,48 +194,75 @@ create or replace function public.handle_new_user()
 returns trigger as $$
 declare
   raw_role text;
-  user_role text;
-  user_status text;
-  org_id text;
+  assigned_role text;
+  assigned_status text;
+  org_id uuid;
+  existing_senmaster_count int;
 begin
   raw_role := coalesce(new.raw_user_meta_data->>'role', 'Master');
   
-  -- Security Guard: Never allow assigning 'Superadmin' via user-provided metadata
-  if raw_role = 'Superadmin' then
-    user_role := 'Master';
-  elsif raw_role = 'SenMaster' then
-    user_role := 'SenMaster';
-  else
-    user_role := 'Master';
+  -- Parse organization_id if provided
+  org_id := null;
+  if new.raw_user_meta_data->>'organization_id' is not null and new.raw_user_meta_data->>'organization_id' != '' then
+    begin
+      org_id := (new.raw_user_meta_data->>'organization_id')::uuid;
+    exception when others then
+      org_id := null;
+    end;
   end if;
 
-  user_status := case 
-    when user_role = 'SenMaster' then 'Approved' 
-    else 'Pending' 
-  end;
-  org_id := new.raw_user_meta_data->>'organization_id';
+  -- Security Guard 1: Never allow assigning 'Superadmin' via user-provided metadata
+  if raw_role = 'Superadmin' then
+    assigned_role := 'Master';
+    assigned_status := 'Pending';
+  elsif raw_role = 'SenMaster' and org_id is not null then
+    -- Check if this organization already has a SenMaster
+    select count(*) into existing_senmaster_count 
+    from public.users 
+    where organization_id = org_id and role = 'SenMaster';
 
-  -- Update auth.users app_metadata for secure JWT claims
+    if existing_senmaster_count = 0 then
+      -- First master / creator of this organization is the approved SenMaster
+      assigned_role := 'SenMaster';
+      assigned_status := 'Approved';
+    else
+      -- Organization already has an owner; additional masters must be regular Masters and Pending approval
+      assigned_role := 'Master';
+      assigned_status := 'Pending';
+    end if;
+  else
+    assigned_role := 'Master';
+    assigned_status := 'Pending';
+  end if;
+
+  -- Insert into public.users
+  insert into public.users (id, username, role, status, organization_id, name, phone)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
+    assigned_role,
+    assigned_status,
+    org_id,
+    coalesce(new.raw_user_meta_data->>'name', ''),
+    coalesce(new.raw_user_meta_data->>'phone', '')
+  )
+  on conflict (id) do update set
+    role = excluded.role,
+    status = excluded.status,
+    organization_id = excluded.organization_id,
+    name = coalesce(nullif(excluded.name, ''), public.users.name),
+    phone = coalesce(nullif(excluded.phone, ''), public.users.phone);
+
+  -- Synchronize auth.users app_metadata for JWT claims
   update auth.users
   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || 
                           jsonb_build_object(
-                            'role', user_role, 
-                            'status', user_status,
+                            'role', assigned_role, 
+                            'status', assigned_status,
                             'organization_id', org_id
                           )
   where id = new.id;
 
-  -- Insert into public.users
-  insert into public.users (id, username, name, phone, role, status, organization_id)
-  values (
-    new.id,
-    split_part(new.email, '@', 1),
-    coalesce(new.raw_user_meta_data->>'name', ''),
-    coalesce(new.raw_user_meta_data->>'phone', ''),
-    user_role,
-    user_status,
-    org_id::uuid
-  );
   return new;
 end;
 $$ language plpgsql security definer;

@@ -134,6 +134,22 @@
           ></i>
           Организации
         </a>
+        <!-- All Records Registry for Superadmin -->
+        <a
+          v-if="user.Role === 'Superadmin'"
+          @click="setTab('all_records')"
+          :class="
+            activeTab === 'all_records'
+              ? 'bg-indigo-50 text-indigo-700'
+              : 'text-slate-600 hover:bg-slate-50'
+          "
+          class="flex items-center gap-3 px-4 py-2 text-sm rounded-lg font-semibold cursor-pointer transition-colors"
+        >
+          <i
+            class="bi bi-journal-check w-4 h-4 flex items-center justify-center"
+          ></i>
+          Реестр записей
+        </a>
       </template>
 
       <!-- About / Welcome screen link -->

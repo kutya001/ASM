@@ -180,6 +180,10 @@ export default {
           return "Пользователи";
         case "page_analytics":
           return "Логи страниц";
+        case "organizations":
+          return "Организации";
+        case "all_records":
+          return "Реестр записей";
         case "applications":
           return "Заявки";
         default:
@@ -192,6 +196,10 @@ export default {
           return "bi-pie-chart-fill";
         case "records":
           return "bi-journal-text";
+        case "all_records":
+          return "bi-journal-check";
+        case "organizations":
+          return "bi-building";
         case "refs":
           return "bi-tools";
         case "users":
@@ -226,6 +234,10 @@ export default {
           return "Поиск по штату...";
         case "records":
           return "Поиск госномер/имя...";
+        case "all_records":
+          return "Поиск по клиенту, авто, СТО...";
+        case "organizations":
+          return "Поиск организаций...";
         default:
           return "Искать...";
       }

@@ -4,10 +4,10 @@
   >
     <button
       @click="setTab('dashboard')"
-      class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
+      class="mobile-nav-btn flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
       :class="
         activeTab === 'dashboard'
-          ? 'bg-indigo-50 text-indigo-600 font-bold'
+          ? 'bg-indigo-50 text-indigo-600 font-bold shadow-xs'
           : 'text-slate-400 hover:text-slate-600 bg-transparent'
       "
     >
@@ -30,10 +30,10 @@
     <button
       v-if="user && user.Role !== 'Superadmin'"
       @click="setTab('records')"
-      class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
+      class="mobile-nav-btn flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
       :class="
         activeTab === 'records'
-          ? 'bg-indigo-50 text-indigo-600 font-bold'
+          ? 'bg-indigo-50 text-indigo-600 font-bold shadow-xs'
           : 'text-slate-400 hover:text-slate-600 bg-transparent'
       "
     >
@@ -53,13 +53,38 @@
         >Записи</span
       >
     </button>
+    <!-- All Records Registry for Superadmin -->
+    <button
+      v-if="user && user.Role === 'Superadmin'"
+      @click="setTab('all_records')"
+      class="mobile-nav-btn flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
+      :class="
+        activeTab === 'all_records'
+          ? 'bg-indigo-50 text-indigo-600 font-bold shadow-xs'
+          : 'text-slate-400 hover:text-slate-600 bg-transparent'
+      "
+    >
+      <div class="flex h-6 items-center justify-center">
+        <span
+          class="material-symbols-outlined text-[19px]"
+          :style="
+            activeTab === 'all_records' ? 'font-variation-settings: \'FILL\' 1;' : ''
+          "
+          >receipt_long</span
+        >
+      </div>
+      <span
+        class="text-[9px] font-bold tracking-wider uppercase leading-none mt-1"
+        >Реестр</span
+      >
+    </button>
     <button
       v-if="user && user.Role !== 'Master'"
       @click="setTab('refs', 'grid')"
-      class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
+      class="mobile-nav-btn flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
       :class="
         activeTab === 'refs'
-          ? 'bg-indigo-50 text-indigo-600 font-bold'
+          ? 'bg-indigo-50 text-indigo-600 font-bold shadow-xs'
           : 'text-slate-400 hover:text-slate-600 bg-transparent'
       "
     >
@@ -81,10 +106,10 @@
     <button
       v-if="user && user.Role === 'SenMaster'"
       @click="setTab('users')"
-      class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
+      class="mobile-nav-btn flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
       :class="
         activeTab === 'users'
-          ? 'bg-indigo-50 text-indigo-600 font-bold'
+          ? 'bg-indigo-50 text-indigo-600 font-bold shadow-xs'
           : 'text-slate-400 hover:text-slate-600 bg-transparent'
       "
     >
@@ -106,10 +131,10 @@
     <button
       v-if="user && user.Role === 'Superadmin'"
       @click="setTab('all_users')"
-      class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
+      class="mobile-nav-btn flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
       :class="
         activeTab === 'all_users'
-          ? 'bg-indigo-50 text-indigo-600 font-bold'
+          ? 'bg-indigo-50 text-indigo-600 font-bold shadow-xs'
           : 'text-slate-400 hover:text-slate-600 bg-transparent'
       "
     >
@@ -130,10 +155,10 @@
     <button
       v-if="user && user.Role === 'Superadmin'"
       @click="setTab('organizations')"
-      class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
+      class="mobile-nav-btn flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all duration-200 cursor-pointer border-none outline-none"
       :class="
         activeTab === 'organizations'
-          ? 'bg-indigo-50 text-indigo-600 font-bold'
+          ? 'bg-indigo-50 text-indigo-600 font-bold shadow-xs'
           : 'text-slate-400 hover:text-slate-600 bg-transparent'
       "
     >

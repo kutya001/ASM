@@ -180,6 +180,7 @@
     <UserConfigModal ref="userConfigModal" :store="store" @save="refreshUsers" />
     <RefModal ref="refModal" />
     <BulkUploadModal ref="bulkModal" />
+    <CompleteProfileModal :user="user" @completed="refreshUsers" />
     <GameContainer />
 
     <!-- Floating Action Button (FAB) for ergonomics -->
@@ -204,6 +205,7 @@ import RecordModal from "./components/modals/RecordModal.vue";
 import BulkUploadModal from "./components/modals/BulkUploadModal.vue";
 import RefModal from "./components/modals/RefModal.vue";
 import UserConfigModal from "./components/modals/UserConfigModal.vue";
+import CompleteProfileModal from "./components/modals/CompleteProfileModal.vue";
 import WelcomeScreen from "./views/WelcomeScreen.vue";
 import Sidebar from "./components/layout/Sidebar.vue";
 import AppHeader from "./components/layout/Header.vue";
@@ -218,6 +220,7 @@ export default {
     BulkUploadModal,
     RefModal,
     UserConfigModal,
+    CompleteProfileModal,
     WelcomeScreen,
     Sidebar,
     AppHeader,
@@ -277,6 +280,9 @@ export default {
       "sortedBrands",
       "sortedServices",
     ]),
+    store() {
+      return useMainStore();
+    },
     routeProps() {
       return {
         filteredRecords: this.filteredRecords,
@@ -695,6 +701,9 @@ export default {
       } else if (this.activeTab === "users") {
         this.openUserConfigModal(-1);
       }
+    },
+    refreshUsers() {
+      this.loadInitialData();
     }
   },
 };

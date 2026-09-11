@@ -306,6 +306,7 @@ export async function registerUserWithOrg(username, password, orgMode, orgValue)
       data: {
         role,
         organization_id: orgId,
+        username: cleanUsername,
         name: "",
         phone: "",
       }
@@ -316,8 +317,8 @@ export async function registerUserWithOrg(username, password, orgMode, orgValue)
   return {
     success: true,
     message: orgMode === "create" 
-      ? "Организация создана. Вы можете войти в систему." 
-      : "Заявка отправлена. Ожидайте подтверждения Старшего мастера организации."
+      ? "Организация создана. Вы зарегистрированы как Главный мастер." 
+      : "Заявка отправлена. Ожидайте подтверждения Главным мастером организации."
   };
 }
 

@@ -149,14 +149,14 @@
                   <button
                     v-if="u.Status === 'Pending'"
                     @click="approveUser(u.ID)"
-                    class="h-7 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center gap-1 transition border-none cursor-pointer text-[10px] font-bold shadow-xs"
+                    class="h-7 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-1 transition border-none cursor-pointer text-[10px] font-bold shadow-xs"
                   >
                     <span class="material-symbols-outlined text-[13px] font-bold">done</span>
                     Одобрить
                   </button>
                   <button
                     @click="editUser(u)"
-                    class="w-7 h-7 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-600 rounded-lg flex items-center justify-center transition border-none cursor-pointer p-0"
+                    class="w-7 h-7 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-600 rounded-xl flex items-center justify-center transition border-none cursor-pointer p-0"
                     title="Редактировать пароль / данные"
                   >
                     <span class="material-symbols-outlined text-[14px] font-bold">edit</span>
@@ -164,7 +164,7 @@
                   <button
                     v-if="store.user && u.ID !== store.user.ID"
                     @click="confirmDeleteUser(u)"
-                    class="w-7 h-7 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-lg flex items-center justify-center transition border-none cursor-pointer p-0"
+                    class="w-7 h-7 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-xl flex items-center justify-center transition border-none cursor-pointer p-0"
                     title="Удалить пользователя"
                   >
                     <span class="material-symbols-outlined text-[14px] font-bold">delete</span>
