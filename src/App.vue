@@ -179,7 +179,7 @@
     <RecordModal ref="recordModal" :store="store" :user="user" />
     <UserConfigModal ref="userConfigModal" :store="store" @save="refreshUsers" />
     <RefModal ref="refModal" />
-    <BulkUploadModal ref="bulkModal" />
+    <CsvImportModal ref="bulkModal" />
     <CompleteProfileModal :user="user" @completed="refreshUsers" />
     <GameContainer />
 
@@ -202,7 +202,7 @@ import { getSubscriptionDaysLeft } from "./utils/helpers";
 
 import ProfileModal from "./components/modals/ProfileModal.vue";
 import RecordModal from "./components/modals/RecordModal.vue";
-import BulkUploadModal from "./components/modals/BulkUploadModal.vue";
+import CsvImportModal from "./components/modals/CsvImportModal.vue";
 import RefModal from "./components/modals/RefModal.vue";
 import UserConfigModal from "./components/modals/UserConfigModal.vue";
 import CompleteProfileModal from "./components/modals/CompleteProfileModal.vue";
@@ -217,7 +217,7 @@ export default {
   components: {
     ProfileModal,
     RecordModal,
-    BulkUploadModal,
+    CsvImportModal,
     RefModal,
     UserConfigModal,
     CompleteProfileModal,

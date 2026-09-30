@@ -165,6 +165,11 @@ function handleError(error) {
   }
 }
 
+function isValidUUID(str) {
+  if (!str || typeof str !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str.trim());
+}
+
 // ========================
 // AUTH & REGISTRATION
 // ========================
@@ -418,7 +423,7 @@ export async function getInitData(role, userId, orgId) {
   const subscriptionLogsQuery = supabase.from("subscription_logs").select("*").order("created_at", { ascending: false });
   const supportTicketsQuery = supabase.from("support_tickets").select("*").order("created_at", { ascending: false });
 
-  if (!isSuper && orgId) {
+  if (!isSuper && orgId && isValidUUID(orgId)) {
     recordsQuery.eq("organization_id", orgId);
     servicesQuery.eq("organization_id", orgId);
     usersQuery.eq("organization_id", orgId);
@@ -427,7 +432,7 @@ export async function getInitData(role, userId, orgId) {
     subscriptionLogsQuery.eq("organization_id", orgId);
   }
 
-  if (!isSuper) {
+  if (!isSuper && userId && isValidUUID(userId)) {
     supportTicketsQuery.eq("user_id", userId);
   }
 
@@ -522,12 +527,6 @@ export async function getTable(sheetName) {
 // ========================
 // CRUD
 // ========================
-
-const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isValidUUID(str) {
-  if (!str) return false;
-  return uuidRegex.test(str);
-}
 
 export async function addRow(sheetName, obj) {
   const table = resolveTable(sheetName);
@@ -695,4 +694,267 @@ export async function bulkImport(data) {
   }
 
   return getInitData(role, userId, orgId);
+}
+
+export async function bulkUpsertReferences(data, passedRole = null, passedUserId = null, passedOrgId = null) {
+  const role = passedRole || data._role || "Superadmin";
+  const userId = passedUserId || data._userId || null;
+  const orgId = passedOrgId || data.OrganizationID || data.organization_id || null;
+
+  const stats = {
+    brands: { created: 0, updated: 0 },
+    models: { created: 0, updated: 0 },
+    categories: { created: 0, updated: 0 },
+    services: { created: 0, updated: 0 },
+    errors: 0,
+  };
+
+  // 1. Process Categories
+  const categoryMap = {}; // name.toLowerCase() -> id
+  {
+    const { data: existingCats } = await supabase.from("service_categories").select("id, name");
+    (existingCats || []).forEach((c) => {
+      if (c.name) categoryMap[c.name.trim().toLowerCase()] = c.id;
+    });
+
+    if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
+      for (const cat of data.categories) {
+        const name = String(cat.Name || "").trim();
+        if (!name) {
+          stats.errors++;
+          continue;
+        }
+        const key = name.toLowerCase();
+        if (categoryMap[key]) {
+          await supabase.from("service_categories").update({ name }).eq("id", categoryMap[key]);
+          stats.categories.updated++;
+        } else {
+          const { data: inserted, error } = await supabase
+            .from("service_categories")
+            .insert({ name })
+            .select("id, name")
+            .single();
+          if (!error && inserted) {
+            categoryMap[key] = inserted.id;
+            stats.categories.created++;
+          } else {
+            stats.errors++;
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Process Brands
+  const brandMap = {}; // name.toLowerCase() -> id
+  {
+    const { data: existingBrands } = await supabase.from("brands").select("id, name");
+    (existingBrands || []).forEach((b) => {
+      if (b.name) brandMap[b.name.trim().toLowerCase()] = b.id;
+    });
+
+    if (data.brands && Array.isArray(data.brands) && data.brands.length > 0) {
+      for (const b of data.brands) {
+        const name = String(b.Name || "").trim();
+        if (!name) {
+          stats.errors++;
+          continue;
+        }
+        const key = name.toLowerCase();
+        if (brandMap[key]) {
+          await supabase.from("brands").update({ name }).eq("id", brandMap[key]);
+          stats.brands.updated++;
+        } else {
+          const { data: inserted, error } = await supabase
+            .from("brands")
+            .insert({ name })
+            .select("id, name")
+            .single();
+          if (!error && inserted) {
+            brandMap[key] = inserted.id;
+            stats.brands.created++;
+          } else {
+            stats.errors++;
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Process Models
+  if (data.models && Array.isArray(data.models) && data.models.length > 0) {
+    const { data: existingModels } = await supabase.from("models").select("id, brand_id, name");
+    
+    for (const m of data.models) {
+      const name = String(m.Name || "").trim();
+      const brandName = String(m.BrandName || "").trim();
+      if (!name) {
+        stats.errors++;
+        continue;
+      }
+
+      let brandId = m.BrandID;
+      if (!brandId && brandName) {
+        const bKey = brandName.toLowerCase();
+        brandId = brandMap[bKey];
+        if (!brandId) {
+          const { data: newB, error: bErr } = await supabase
+            .from("brands")
+            .insert({ name: brandName })
+            .select("id, name")
+            .single();
+          if (!bErr && newB) {
+            brandId = newB.id;
+            brandMap[bKey] = brandId;
+            stats.brands.created++;
+          }
+        }
+      }
+
+      if (!brandId || !isValidUUID(brandId)) {
+        stats.errors++;
+        continue;
+      }
+
+      const existing = (existingModels || []).find(
+        (em) => String(em.brand_id) === String(brandId) && em.name.trim().toLowerCase() === name.toLowerCase()
+      );
+
+      if (existing) {
+        await supabase.from("models").update({ name }).eq("id", existing.id);
+        stats.models.updated++;
+      } else {
+        const { data: ins, error: mErr } = await supabase
+          .from("models")
+          .insert({ brand_id: brandId, name })
+          .select("id, brand_id, name")
+          .single();
+        if (!mErr && ins) {
+          (existingModels || []).push(ins);
+          stats.models.created++;
+        } else {
+          stats.errors++;
+        }
+      }
+    }
+  }
+
+  // 4. Process Services
+  if (data.services && Array.isArray(data.services) && data.services.length > 0) {
+    const isGlobal = role === "Superadmin" || !orgId;
+
+    if (isGlobal) {
+      const { data: existingGlobal } = await supabase.from("global_services").select("id, category_id, name, default_price");
+
+      for (const s of data.services) {
+        const name = String(s.Name || "").trim();
+        const catName = String(s.CategoryName || "").trim();
+        const price = Number(s.Price != null ? s.Price : s.DefaultPrice) || 0;
+        if (!name) {
+          stats.errors++;
+          continue;
+        }
+
+        let catId = s.CategoryID;
+        if (!catId && catName) {
+          const cKey = catName.toLowerCase();
+          catId = categoryMap[cKey];
+          if (!catId) {
+            const { data: newCat, error: cErr } = await supabase
+              .from("service_categories")
+              .insert({ name: catName })
+              .select("id, name")
+              .single();
+            if (!cErr && newCat) {
+              catId = newCat.id;
+              categoryMap[cKey] = catId;
+              stats.categories.created++;
+            }
+          }
+        }
+
+        const existing = (existingGlobal || []).find((eg) => {
+          const nameMatch = eg.name.trim().toLowerCase() === name.toLowerCase();
+          if (catId) return nameMatch && String(eg.category_id) === String(catId);
+          return nameMatch;
+        });
+
+        if (existing) {
+          await supabase
+            .from("global_services")
+            .update({ name, default_price: price, ...(catId ? { category_id: catId } : {}) })
+            .eq("id", existing.id);
+          stats.services.updated++;
+        } else {
+          const { data: ins, error: sErr } = await supabase
+            .from("global_services")
+            .insert({ name, default_price: price, category_id: catId || null })
+            .select("id, name")
+            .single();
+          if (!sErr && ins) {
+            stats.services.created++;
+          } else {
+            stats.errors++;
+          }
+        }
+      }
+    } else {
+      const { data: existingServices } = await supabase
+        .from("services")
+        .select("id, name, price, category_id")
+        .eq("organization_id", orgId);
+
+      for (const s of data.services) {
+        const name = String(s.Name || "").trim();
+        const catName = String(s.CategoryName || "").trim();
+        const price = Number(s.Price != null ? s.Price : 0);
+        if (!name) {
+          stats.errors++;
+          continue;
+        }
+
+        let catId = s.CategoryID;
+        if (!catId && catName) {
+          catId = categoryMap[catName.toLowerCase()] || null;
+        }
+
+        const existing = (existingServices || []).find(
+          (es) => es.name.trim().toLowerCase() === name.toLowerCase()
+        );
+
+        if (existing) {
+          await supabase
+            .from("services")
+            .update({ name, price, ...(catId ? { category_id: catId } : {}) })
+            .eq("id", existing.id);
+          stats.services.updated++;
+        } else {
+          const { data: ins, error: sErr } = await supabase
+            .from("services")
+            .insert({ organization_id: orgId, category_id: catId || null, name, price })
+            .select("id, name")
+            .single();
+          if (!sErr && ins) {
+            stats.services.created++;
+          } else {
+            stats.errors++;
+          }
+        }
+      }
+    }
+  }
+
+  const totalCreated = stats.brands.created + stats.models.created + stats.categories.created + stats.services.created;
+  const totalUpdated = stats.brands.updated + stats.models.updated + stats.categories.updated + stats.services.updated;
+
+  const initData = await getInitData(role, userId, orgId);
+
+  return {
+    success: true,
+    created: totalCreated,
+    updated: totalUpdated,
+    errors: stats.errors,
+    details: stats,
+    initData,
+  };
 }

@@ -13,7 +13,8 @@ import {
   updateRecord, 
   updateRow, 
   deleteRow, 
-  bulkImport 
+  bulkImport,
+  bulkUpsertReferences
 } from "../services/api";
 import { generateUUID } from "../utils/helpers";
 
@@ -313,6 +314,40 @@ export const useMainStore = defineStore("main", {
         this.startRealtimeSync();
       } catch (e) {
         this.initError = e.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+    async bulkUpsertReferences(payload) {
+      if (!this.user) return { success: false, error: "Not authenticated" };
+      this.loading = true;
+      try {
+        const role = this.user.Role || this.user.role;
+        const id = this.user.ID || this.user.id;
+        const orgId = this.user.OrganizationID || this.user.organization_id;
+        const res = await bulkUpsertReferences(payload, role, id, orgId);
+        if (res.success && res.initData) {
+          const d = res.initData;
+          if (d.records) {
+            d.records.forEach((r) => {
+              if (r.ServicesJSON) {
+                try {
+                  r.ServicesJSON =
+                    typeof r.ServicesJSON === "string"
+                      ? JSON.parse(r.ServicesJSON)
+                      : r.ServicesJSON;
+                } catch (e) {
+                  r.ServicesJSON = [];
+                }
+              } else r.ServicesJSON = [];
+            });
+          }
+          if (!d.welcomescreens) {
+            d.welcomescreens = [];
+          }
+          this.db = d;
+        }
+        return res;
       } finally {
         this.loading = false;
       }
