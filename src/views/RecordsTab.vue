@@ -552,14 +552,14 @@
                     </a>
                     <span class="text-slate-350 font-light text-[9px]">|</span>
                     <!-- WhatsApp link -->
-                    <a
-                      :href="getWhatsAppLink(r.Phone)"
-                      target="_blank"
-                      class="text-emerald-650 hover:text-emerald-700 font-bold flex items-center"
-                      title="Написать в WhatsApp"
+                    <button
+                      type="button"
+                      @click.stop="openWhatsAppModal(r)"
+                      class="text-emerald-650 hover:text-emerald-700 font-bold flex items-center bg-transparent border-none p-0 cursor-pointer"
+                      title="WhatsApp и гарантийный чек"
                     >
                       <i class="bi bi-whatsapp text-[10.5px]"></i>
-                    </a>
+                    </button>
                   </div>
                 </div>
 
@@ -720,7 +720,17 @@
                       </td>
                       <td class="px-4 py-2.5 text-slate-700">
                         <div class="font-bold">{{ r.ClientName || '—' }}</div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">{{ r.Phone || '' }}</div>
+                        <div v-if="r.Phone" class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1.5 font-mono">
+                          <span>{{ r.Phone }}</span>
+                          <button
+                            type="button"
+                            @click.stop="openWhatsAppModal(r)"
+                            class="text-emerald-600 hover:text-emerald-700 cursor-pointer p-0 bg-transparent border-none inline-flex items-center"
+                            title="WhatsApp и гарантийный чек"
+                          >
+                            <i class="bi bi-whatsapp text-xs"></i>
+                          </button>
+                        </div>
                       </td>
                       <td class="px-4 py-2.5 text-slate-700 whitespace-nowrap">
                         {{ getMasterName(r.MasterID) }}
@@ -764,10 +774,22 @@
               </div>
             </div>
           </div>
+
+    <!-- WhatsApp & Warranty Receipt Modal -->
+    <WhatsAppReceiptModal
+      :show="showWhatsAppModal"
+      :record="selectedWhatsAppRecord"
+      @close="showWhatsAppModal = false"
+    />
 </template>
 <script>
+import WhatsAppReceiptModal from "../components/modals/WhatsAppReceiptModal.vue";
+
 export default {
   name: 'RecordsTab',
+  components: {
+    WhatsAppReceiptModal,
+  },
   props: {
     filteredRecords: Array,
     isFiltersExpanded: Boolean,
@@ -787,6 +809,8 @@ export default {
       touchStartX: 0,
       touchStartY: 0,
       selectedRecordIDs: [],
+      showWhatsAppModal: false,
+      selectedWhatsAppRecord: null,
       // Mass edit properties
       massNewStatus: "",
       massNewPaymentStatus: "",
@@ -1060,6 +1084,10 @@ export default {
         const union = new Set([...this.selectedRecordIDs, ...filteredIds]);
         this.selectedRecordIDs = Array.from(union);
       }
+    },
+    openWhatsAppModal(record) {
+      this.selectedWhatsAppRecord = record;
+      this.showWhatsAppModal = true;
     }
   }
 };

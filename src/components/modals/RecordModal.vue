@@ -111,15 +111,15 @@
                         <span class="font-mono">{{ formatPhoneForLink(recordForm.Phone) }}</span>
                       </a>
                       <!-- WhatsApp component -->
-                      <a
-                        :href="getWhatsAppLink(recordForm.Phone)"
-                        target="_blank"
-                        class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-white bg-emerald-50 hover:bg-emerald-650 px-2 py-1 rounded-lg transition-all border border-emerald-200/50"
-                        title="Написать в WhatsApp"
+                      <button
+                        type="button"
+                        @click.stop="openWhatsAppModal"
+                        class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-white bg-emerald-50 hover:bg-emerald-650 px-2 py-1 rounded-lg transition-all border border-emerald-200/50 cursor-pointer"
+                        title="WhatsApp и гарантийный чек"
                       >
                         <i class="bi bi-whatsapp text-[10.5px]"></i>
-                        <span>WhatsApp</span>
-                      </a>
+                        <span>WhatsApp / Чек</span>
+                      </button>
                     </div>
                   </div>
 
@@ -918,14 +918,25 @@
         </div>
       </div>
     </div>
+
+    <!-- WhatsApp & Warranty Receipt Modal -->
+    <WhatsAppReceiptModal
+      :show="showWhatsAppModal"
+      :record="recordForm"
+      @close="showWhatsAppModal = false"
+    />
   </div>
 </template>
 
 <script>
 import { useMainStore } from "../../store";
 import { formatDate, getDuration, formatPhoneInput, generateUUID } from "../../utils/helpers";
+import WhatsAppReceiptModal from "./WhatsAppReceiptModal.vue";
 
 export default {
+  components: {
+    WhatsAppReceiptModal,
+  },
   directives: {
     clickOutside: {
       mounted(el, binding) {
@@ -943,6 +954,7 @@ export default {
   },
   data() {
     return {
+      showWhatsAppModal: false,
       recordForm: this.emptyRecord(),
       isEditingRecord: false,
       showServiceSelector: false,
@@ -1028,6 +1040,9 @@ export default {
     }
   },
   methods: {
+    openWhatsAppModal() {
+      this.showWhatsAppModal = true;
+    },
     formatDate(val) {
       return formatDate(val);
     },

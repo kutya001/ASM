@@ -177,14 +177,14 @@
                 <div class="font-bold text-slate-800">{{ r.ClientName || "Без имени" }}</div>
                 <div v-if="r.Phone" class="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5 font-mono">
                   <span>{{ r.Phone }}</span>
-                  <a
-                    :href="getWhatsAppLink(r.Phone, r.CarNumber)"
-                    target="_blank"
-                    class="text-emerald-600 hover:text-emerald-700 transition"
-                    title="Написать в WhatsApp"
+                  <button
+                    type="button"
+                    @click.stop="openWhatsAppModal(r)"
+                    class="text-emerald-600 hover:text-emerald-700 transition cursor-pointer p-0 bg-transparent border-none inline-flex items-center"
+                    title="WhatsApp и гарантийный чек"
                   >
                     <i class="bi bi-whatsapp"></i>
-                  </a>
+                  </button>
                 </div>
               </td>
 
@@ -332,14 +332,15 @@
             <span class="text-slate-400 font-semibold text-[10px]">Клиент:</span>
             <div class="flex items-center gap-1.5">
               <span class="font-bold text-slate-800">{{ r.ClientName || "—" }}</span>
-              <a
+              <button
                 v-if="r.Phone"
-                :href="getWhatsAppLink(r.Phone, r.CarNumber)"
-                target="_blank"
-                class="text-emerald-600 hover:text-emerald-700"
+                type="button"
+                @click.stop="openWhatsAppModal(r)"
+                class="text-emerald-600 hover:text-emerald-700 transition cursor-pointer p-0 bg-transparent border-none inline-flex items-center"
+                title="WhatsApp и гарантийный чек"
               >
                 <i class="bi bi-whatsapp"></i>
-              </a>
+              </button>
             </div>
           </div>
           <div class="flex justify-between items-center">
@@ -375,15 +376,26 @@
         Записи не найдены.
       </div>
     </div>
+
+    <!-- WhatsApp & Warranty Receipt Modal -->
+    <WhatsAppReceiptModal
+      :show="showWhatsAppModal"
+      :record="selectedWhatsAppRecord"
+      @close="showWhatsAppModal = false"
+    />
   </div>
 </template>
 
 <script>
 import { useMainStore } from "../store";
 import { formatDate } from "../utils/helpers";
+import WhatsAppReceiptModal from "../components/modals/WhatsAppReceiptModal.vue";
 
 export default {
   name: "AllRecordsTab",
+  components: {
+    WhatsAppReceiptModal,
+  },
   props: {
     db: {
       type: Object,
@@ -408,6 +420,8 @@ export default {
       filterPayment: "all",
       sortBy: "date_desc",
       isFetching: false,
+      showWhatsAppModal: false,
+      selectedWhatsAppRecord: null,
     };
   },
   computed: {
@@ -580,6 +594,10 @@ export default {
         default:
           return "bg-slate-100 text-slate-700 border-slate-200/50";
       }
+    },
+    openWhatsAppModal(record) {
+      this.selectedWhatsAppRecord = record;
+      this.showWhatsAppModal = true;
     },
     getWhatsAppLink(phone, carNumber) {
       const clean = String(phone || "").replace(/\D/g, "");
